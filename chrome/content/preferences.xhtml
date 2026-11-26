@@ -4,19 +4,34 @@
       onload="Zotero.EixosOrganizer &amp;&amp; Zotero.EixosOrganizer._prefsPane &amp;&amp; Zotero.EixosOrganizer._prefsPane.init()">
   <html:div class="eixos-pref-root">
     <html:div class="eixos-header">
-      <html:h2>Eixos Organizer — Classificação Automática por Eixo e Tema</html:h2>
-      <html:p class="eixos-subtitle">
-        100% não-destrutivo: nunca apaga itens, nunca remove da pasta original e nunca duplica arquivos.
+      <html:h2 data-i18n="prefTitle">Organizer — Automatic Organization by Axis &amp; Theme</html:h2>
+      <html:p class="eixos-subtitle" data-i18n="prefSubtitle">
+        100% non-destructive: never deletes items, never removes items from the source collection, and never duplicates files.
       </html:p>
     </html:div>
 
-    <!-- 1. Pastas Gerenciadas -->
+    <!-- Language / Idioma -->
     <html:section class="eixos-card">
       <html:div class="eixos-card-head">
-        <html:h3>1. Pastas Gerenciadas (Origem → Árvore de Eixos e Temas)</html:h3>
+        <html:h3 data-i18n="prefLangSection">Language / Idioma</html:h3>
+      </html:div>
+      <html:div class="eixos-field">
+        <html:label for="eixos-language" data-i18n="prefLangLabel">Interface and classification language:</html:label>
+        <html:select id="eixos-language">
+          <html:option value="auto" data-i18n="prefLangAuto">Auto (follow Zotero language)</html:option>
+          <html:option value="en-US" data-i18n="prefLangEn">English</html:option>
+          <html:option value="pt-BR" data-i18n="prefLangPt">Português (Brasil)</html:option>
+        </html:select>
+      </html:div>
+    </html:section>
+
+    <!-- 1. Managed Folders -->
+    <html:section class="eixos-card">
+      <html:div class="eixos-card-head">
+        <html:h3 data-i18n="prefSec1Title">1. Managed Folders (Source → Thematic Axis Tree)</html:h3>
         <html:div class="eixos-btn-row">
-          <html:button id="eixos-btn-autodiscover" type="button" class="eixos-btn">Detectar Automaticamente</html:button>
-          <html:button id="eixos-btn-refresh-cols" type="button" class="eixos-btn">Atualizar Listas</html:button>
+          <html:button id="eixos-btn-autodiscover" type="button" class="eixos-btn" data-i18n="prefBtnAutodiscover">Auto-Detect</html:button>
+          <html:button id="eixos-btn-refresh-cols" type="button" class="eixos-btn" data-i18n="prefBtnRefreshCols">Refresh Lists</html:button>
         </html:div>
       </html:div>
 
@@ -24,114 +39,114 @@
 
       <html:div class="eixos-add-rule">
         <html:div class="eixos-field">
-          <html:label for="eixos-new-source">Pasta a gerenciar:</html:label>
+          <html:label for="eixos-new-source" data-i18n="prefLabelSource">Collection to manage:</html:label>
           <html:select id="eixos-new-source"></html:select>
         </html:div>
         <html:div class="eixos-field">
-          <html:label for="eixos-new-target">Subcoleção temática de destino:</html:label>
+          <html:label for="eixos-new-target" data-i18n="prefLabelTarget">Destination thematic subcollection:</html:label>
           <html:select id="eixos-new-target"></html:select>
         </html:div>
         <html:div class="eixos-field eixos-field-inline">
           <html:label class="eixos-check">
             <html:input id="eixos-new-allow-create" type="checkbox" checked="checked" />
-            Permitir criar novos eixos/temas nesta regra
+            <html:span data-i18n="prefCheckRuleCreate">Allow creating new axes/themes for this rule</html:span>
           </html:label>
-          <html:button id="eixos-btn-add-rule" type="button" class="eixos-btn eixos-btn-primary">+ Adicionar Pasta Gerenciada</html:button>
+          <html:button id="eixos-btn-add-rule" type="button" class="eixos-btn eixos-btn-primary" data-i18n="prefBtnAddRule">+ Add Managed Folder</html:button>
         </html:div>
         <html:div id="eixos-rules-status" class="eixos-status"></html:div>
       </html:div>
     </html:section>
 
-    <!-- 2. Comportamento -->
+    <!-- 2. Behavior -->
     <html:section class="eixos-card">
-      <html:h3>2. Comportamento ao Adicionar Novo Item</html:h3>
+      <html:h3 data-i18n="prefSec2Title">2. Behavior When Adding a New Item</html:h3>
       <html:div class="eixos-grid-2">
         <html:div class="eixos-field">
-          <html:label for="eixos-mode">Ao adicionar 1 item novo em pasta gerenciada:</html:label>
+          <html:label for="eixos-mode" data-i18n="prefLabelMode">When adding 1 new item to a managed folder:</html:label>
           <html:select id="eixos-mode">
-            <html:option value="auto">Automático com notificação (recomendado — anexa no eixo e avisa onde foi)</html:option>
-            <html:option value="interactive">Interativo (abre janela para confirmar antes de vincular)</html:option>
+            <html:option value="auto" data-i18n="prefModeAuto">Automatic with notification (recommended — links to axis and notifies where)</html:option>
+            <html:option value="interactive" data-i18n="prefModeInteractive">Interactive (open dialog to confirm before linking)</html:option>
           </html:select>
         </html:div>
         <html:div class="eixos-field">
-          <html:label for="eixos-max-targets">Máximo de temas por item:</html:label>
+          <html:label for="eixos-max-targets" data-i18n="prefLabelMaxTargets">Max themes per item:</html:label>
           <html:input id="eixos-max-targets" type="number" min="1" max="8" value="3" />
         </html:div>
       </html:div>
-      <html:p class="eixos-help">
-        Ao organizar uma coleção inteira (botão direito → Organizar por Eixo e Tema), o plugin sempre mostra primeiro o plano completo em uma única tela para você revisar e executar de uma vez.
+      <html:p class="eixos-help" data-i18n="prefBatchHint">
+        When organizing an entire collection (right-click → Organize by Axis &amp; Theme), the plugin always shows a complete single-screen plan for you to review before executing.
       </html:p>
       <html:div class="eixos-checks">
         <html:label class="eixos-check">
           <html:input id="eixos-allow-create" type="checkbox" />
-          Permitir sugerir/criar novas subcoleções quando surgir um tema novo
+          <html:span data-i18n="prefCheckAllowCreate">Allow suggesting/creating new subcollections when a new topic appears</html:span>
         </html:label>
         <html:label class="eixos-check">
           <html:input id="eixos-skip-classified" type="checkbox" />
-          Não mexer em itens que eu já coloquei diretamente em algum eixo/tema da subcoleção
+          <html:span data-i18n="prefCheckSkipClassified">Do not touch items I already placed directly inside a thematic axis/subcollection</html:span>
         </html:label>
       </html:div>
     </html:section>
 
-    <!-- 3. Motor Híbrido (IA + Offline) -->
+    <!-- 3. Classification Engine -->
     <html:section class="eixos-card">
-      <html:h3>3. Motor de Classificação (Híbrido: IA + Offline)</html:h3>
+      <html:h3 data-i18n="prefSec3Title">3. Classification Engine (Hybrid: AI + Offline)</html:h3>
       <html:div class="eixos-grid-2">
         <html:div class="eixos-field">
-          <html:label for="eixos-engine">Motor:</html:label>
+          <html:label for="eixos-engine" data-i18n="prefLabelEngine">Engine:</html:label>
           <html:select id="eixos-engine">
-            <html:option value="hybrid">Híbrido (usa IA se configurada; senão fallback offline)</html:option>
-            <html:option value="ai">Somente IA (erro se IA não estiver configurada)</html:option>
-            <html:option value="offline">Somente Offline (similaridade textual local, sem API)</html:option>
+            <html:option value="hybrid" data-i18n="prefEngineHybrid">Hybrid (AI + keyword cross-check; offline fallback without API)</html:option>
+            <html:option value="ai" data-i18n="prefEngineAI">AI Only (error if AI is not configured)</html:option>
+            <html:option value="offline" data-i18n="prefEngineOffline">Offline Only (local text similarity, no API)</html:option>
           </html:select>
         </html:div>
         <html:div class="eixos-field">
-          <html:label for="eixos-provider">Provedor de IA:</html:label>
+          <html:label for="eixos-provider" data-i18n="prefLabelProvider">AI Provider:</html:label>
           <html:select id="eixos-provider">
-            <html:option value="gemini">Google Gemini (AI Studio)</html:option>
-            <html:option value="openai">OpenAI (ChatGPT API)</html:option>
-            <html:option value="custom">Ollama / Endpoint compatível com OpenAI</html:option>
+            <html:option value="gemini" data-i18n="prefProviderGemini">Google Gemini (AI Studio)</html:option>
+            <html:option value="openai" data-i18n="prefProviderOpenAI">OpenAI (ChatGPT API)</html:option>
+            <html:option value="custom" data-i18n="prefProviderCustom">Ollama / OpenAI-compatible endpoint</html:option>
           </html:select>
         </html:div>
       </html:div>
 
       <html:div class="eixos-grid-2">
         <html:div class="eixos-field">
-          <html:label for="eixos-apikey">Chave de API (salva apenas localmente neste PC):</html:label>
-          <html:input id="eixos-apikey" type="password" placeholder="Cole sua API key (ex.: AIza... ou sk-...)" />
+          <html:label for="eixos-apikey" data-i18n="prefLabelApiKey">API Key (stored locally on this computer only):</html:label>
+          <html:input id="eixos-apikey" type="password" data-i18n-placeholder="prefPlaceholderApiKey" placeholder="Paste your API key (e.g. AIza... or sk-...)" />
         </html:div>
         <html:div class="eixos-field">
-          <html:label for="eixos-model">Modelo:</html:label>
-          <html:input id="eixos-model" type="text" placeholder="gemini-2.5-flash" />
+          <html:label for="eixos-model" data-i18n="prefLabelModel">Model:</html:label>
+          <html:input id="eixos-model" type="text" placeholder="gemini-3.5-flash" />
         </html:div>
       </html:div>
 
       <html:div id="eixos-endpoint-row" class="eixos-field">
-        <html:label for="eixos-endpoint">URL do endpoint (para Ollama / compatível com OpenAI):</html:label>
+        <html:label for="eixos-endpoint" data-i18n="prefLabelEndpoint">Endpoint URL (for Ollama / OpenAI-compatible):</html:label>
         <html:input id="eixos-endpoint" type="text" placeholder="http://localhost:11434/v1/chat/completions" />
       </html:div>
 
       <html:div class="eixos-btn-row">
-        <html:button id="eixos-btn-test-ai" type="button" class="eixos-btn">Testar Conexão com IA</html:button>
+        <html:button id="eixos-btn-test-ai" type="button" class="eixos-btn" data-i18n="prefBtnTestAI">Test AI Connection</html:button>
         <html:span id="eixos-ai-status" class="eixos-status"></html:span>
       </html:div>
     </html:section>
 
-    <!-- 4. Sincronização das regras do plugin -->
+    <!-- 4. Sync Plugin Rules -->
     <html:section class="eixos-card">
-      <html:h3>4. Sincronizar Regras do Plugin (Opcional)</html:h3>
+      <html:h3 data-i18n="prefSec4Title">4. Sync Plugin Rules (Optional)</html:h3>
       <html:label class="eixos-check">
         <html:input id="eixos-sync-library" type="checkbox" />
-        Compartilhar automaticamente a lista de pastas monitoradas com outros PCs desta biblioteca
+        <html:span data-i18n="prefCheckSyncLib">Automatically share the list of monitored folders with other computers using this library</html:span>
       </html:label>
-      <html:p class="eixos-help">
-        As coleções e PDFs já são sincronizados nativamente pelo Zotero/WebDAV. Esta opção sincroniza apenas quais pastas o plugin deve vigiar (em uma nota interna, sem chaves de API), para que outras pessoas não precisem reconfigurar as regras manualmente.
+      <html:p class="eixos-help" data-i18n="prefSyncHelp">
+        Collections and PDFs are already synced natively by Zotero Sync / WebDAV. This option syncs only which folders the plugin monitors (in an internal note, never storing API keys), so teammates do not have to reconfigure rules manually.
       </html:p>
       <html:div class="eixos-btn-row">
-        <html:button id="eixos-btn-sync-push" type="button" class="eixos-btn">Salvar na Nota Sincronizada</html:button>
-        <html:button id="eixos-btn-sync-pull" type="button" class="eixos-btn">Recarregar da Biblioteca</html:button>
-        <html:button id="eixos-btn-export" type="button" class="eixos-btn">Exportar JSON</html:button>
-        <html:button id="eixos-btn-import" type="button" class="eixos-btn">Importar JSON</html:button>
+        <html:button id="eixos-btn-sync-push" type="button" class="eixos-btn" data-i18n="prefBtnSyncPush">Save to Synced Note</html:button>
+        <html:button id="eixos-btn-sync-pull" type="button" class="eixos-btn" data-i18n="prefBtnSyncPull">Reload from Library</html:button>
+        <html:button id="eixos-btn-export" type="button" class="eixos-btn" data-i18n="prefBtnExport">Export JSON</html:button>
+        <html:button id="eixos-btn-import" type="button" class="eixos-btn" data-i18n="prefBtnImport">Import JSON</html:button>
       </html:div>
       <html:div id="eixos-global-status" class="eixos-status"></html:div>
     </html:section>

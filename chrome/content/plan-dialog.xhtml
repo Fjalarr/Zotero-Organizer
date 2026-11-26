@@ -1,49 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-BR">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Eixos Organizer — Plano de Organização por Eixos</title>
+  <title>Organizer — Organization Plan by Axis</title>
   <link rel="stylesheet" href="chrome://eixos-organizer/content/plan-dialog.css" />
 </head>
 <body>
   <div class="plan-root">
     <header class="plan-header">
-      <div class="plan-title" id="plan-title">Plano de Organização por Eixos</div>
-      <div class="plan-subtitle" id="plan-subtitle">
-        Revise, crie índices manuais ou ajuste os eixos abaixo. Ao clicar em "Executar Organização", a janela permanece aberta até verificar no Zotero se cada item foi realmente indexado.
-      </div>
+      <div class="plan-title" id="plan-title">Organization Plan by Axis</div>
+      <div class="plan-subtitle" id="plan-subtitle"></div>
 
       <div class="plan-dest-box">
-        <span class="plan-dest-label" id="plan-dest-label">Subcoleção destino:</span>
+        <span class="plan-dest-label" id="plan-dest-label"></span>
         <span class="plan-dest-existing" id="plan-dest-existing" style="display:none"></span>
         <input id="plan-dest-input" type="text" class="plan-dest-input" style="display:none" value="" />
-        <span class="plan-badge" id="plan-dest-badge">Existente</span>
+        <span class="plan-badge" id="plan-dest-badge"></span>
       </div>
     </header>
 
     <section class="plan-reason-box">
       <div class="plan-reason-left">
-        <span class="plan-badge" id="plan-engine-badge">Modo Offline</span>
+        <span class="plan-badge" id="plan-engine-badge"></span>
         <span class="plan-reason-text" id="plan-reason"></span>
       </div>
       <div class="plan-reason-btns">
-        <button id="plan-btn-re-ai" type="button" class="plan-btn">Reanalisar com IA</button>
-        <button id="plan-btn-re-off" type="button" class="plan-btn">Reanalisar Offline</button>
+        <button id="plan-btn-re-ai" type="button" class="plan-btn">Re-analyze with AI</button>
+        <button id="plan-btn-re-off" type="button" class="plan-btn">Re-analyze Offline</button>
       </div>
     </section>
 
     <section class="plan-manual-box" id="plan-manual-box">
-      <span class="plan-manual-label">Criar índice/eixo manualmente:</span>
-      <input id="plan-manual-input" type="text" class="plan-manual-input" placeholder="Ex.: 01 - Fontes Primárias, História da Coreia, Metodologia…" />
-      <button id="plan-btn-add-manual" type="button" class="plan-btn">+ Criar Índice</button>
+      <span class="plan-manual-label" id="plan-manual-label">Create manual index/axis:</span>
+      <input id="plan-manual-input" type="text" class="plan-manual-input" placeholder="" />
+      <button id="plan-btn-add-manual" type="button" class="plan-btn">+ Create Index</button>
     </section>
 
     <section class="plan-toolbar">
-      <input id="plan-search" type="search" placeholder="Filtrar eixos ou títulos…" />
+      <input id="plan-search" type="search" placeholder="" />
       <div class="plan-toolbar-btns">
-        <button id="plan-btn-select-all" type="button" class="plan-btn">Marcar todos</button>
-        <button id="plan-btn-unselect-all" type="button" class="plan-btn">Desmarcar todos</button>
+        <button id="plan-btn-select-all" type="button" class="plan-btn">Select all</button>
+        <button id="plan-btn-unselect-all" type="button" class="plan-btn">Deselect all</button>
       </div>
     </section>
 
@@ -51,8 +49,8 @@
 
     <section class="plan-exec-box" id="plan-exec-box" style="display:none">
       <div class="plan-exec-head">
-        <span class="plan-exec-status" id="plan-exec-status">Preparando execução…</span>
-        <button id="plan-btn-retry-missing" type="button" class="plan-btn plan-btn-sm" style="display:none">Tentar novamente pendentes</button>
+        <span class="plan-exec-status" id="plan-exec-status"></span>
+        <button id="plan-btn-retry-missing" type="button" class="plan-btn plan-btn-sm" style="display:none">Retry missing items</button>
       </div>
       <div class="plan-progress-track">
         <div class="plan-progress-bar" id="plan-progress-bar"></div>
@@ -61,10 +59,10 @@
     </section>
 
     <footer class="plan-footer">
-      <div class="plan-summary" id="plan-summary">0 eixo(s) • 0 item(ns)</div>
+      <div class="plan-summary" id="plan-summary"></div>
       <div class="plan-footer-btns">
-        <button id="plan-btn-cancel" type="button" class="plan-btn">Cancelar</button>
-        <button id="plan-btn-execute" type="button" class="plan-btn plan-btn-primary">Executar Organização</button>
+        <button id="plan-btn-cancel" type="button" class="plan-btn">Cancel</button>
+        <button id="plan-btn-execute" type="button" class="plan-btn plan-btn-primary">Run Organization</button>
       </div>
     </footer>
   </div>

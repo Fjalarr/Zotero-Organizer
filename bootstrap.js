@@ -33,6 +33,7 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
     Zotero.debug("Eixos Organizer: registerChrome error: " + e);
   }
 
+  Services.scriptloader.loadSubScript(rootURI + "src/i18n.js", globalThis);
   Services.scriptloader.loadSubScript(rootURI + "src/config.js", globalThis);
   Services.scriptloader.loadSubScript(rootURI + "src/organizer.js", globalThis);
   Services.scriptloader.loadSubScript(rootURI + "src/classifier.js", globalThis);

@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Eixos Organizer",
-  "version": "1.4.2",
-  "description": "Organiza automaticamente coleções do Zotero por eixos e temas com modo híbrido (IA + offline), janela interativa e configuração sincronizável entre usuários da biblioteca.",
+  "name": "Organizer",
+  "version": "1.5.0",
+  "description": "Non-destructive Zotero plugin that automatically organizes collections by thematic axes and topics using a hybrid AI + keyword engine, single-screen batch plan review with live DB verification, and bilingual (EN / PT-BR) support.",
   "author": "Daniel Barreto",
   "homepage_url": "https://github.com/Fjalarr/zotero-eixos-organizer",
   "icons": {

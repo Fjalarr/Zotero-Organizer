@@ -408,8 +408,14 @@ var EixosOrganizer = (function () {
         n === "por eixo e tema" ||
         n === "por eixos e temas" ||
         n === "eixos e temas" ||
+        n === "by axis & theme" ||
+        n === "by axis and theme" ||
         n === `${srcNorm} - por eixo e tema` ||
-        n.endsWith(" - por eixo e tema")
+        n === `${srcNorm} - by axis & theme` ||
+        n === `${srcNorm} - by axis and theme` ||
+        n.endsWith(" - por eixo e tema") ||
+        n.endsWith(" - by axis & theme") ||
+        n.endsWith(" - by axis and theme")
       );
     };
 
@@ -426,13 +432,15 @@ var EixosOrganizer = (function () {
       };
     }
 
-    // 2. Check sibling under same parent (e.g. Daniel/Livros -> Daniel/Livros - Por Eixo e Tema)
+    // 2. Check sibling under same parent
     const srcParent = sourceCol.parentID || null;
     const sibling = rows.find(
       (r) =>
         (r.parentCollectionID || null) === srcParent &&
         r.key !== sourceCol.key &&
-        norm(r.collectionName) === `${srcNorm} - por eixo e tema`
+        (norm(r.collectionName) === `${srcNorm} - por eixo e tema` ||
+          norm(r.collectionName) === `${srcNorm} - by axis & theme` ||
+          norm(r.collectionName) === `${srcNorm} - by axis and theme`)
     );
     if (sibling) {
       return {
@@ -453,9 +461,11 @@ var EixosOrganizer = (function () {
     const libID = libraryID || Zotero.Libraries.userLibraryID;
     const sourceCol = Zotero.Collections.getByLibraryAndKey(libID, sourceKey);
     if (!sourceCol) {
-      throw new Error(`Coleção de origem não encontrada (key=${sourceKey}).`);
+      throw new Error(`Source collection not found (key=${sourceKey}).`);
     }
-    const defaultName = `${sourceCol.name} - Por Eixo e Tema`;
+    const suffix =
+      typeof EixosI18n !== "undefined" ? EixosI18n.t("defaultRootSuffix") : "Por Eixo e Tema";
+    const defaultName = `${sourceCol.name} - ${suffix}`;
     const name = String(customName || defaultName).trim() || defaultName;
     return getOrCreateSubcollection(libID, sourceCol.id, name);
   }

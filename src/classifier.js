@@ -42,9 +42,24 @@ var EixosClassifier = (function () {
     }
   }
 
+  function getActiveLocale(settings) {
+    if (typeof EixosI18n !== "undefined") {
+      return EixosI18n.getLocale(settings && settings.language);
+    }
+    return "en-US";
+  }
+
+  function tr(key, params, settings) {
+    if (typeof EixosI18n !== "undefined") {
+      return EixosI18n.t(key, params, settings && settings.language);
+    }
+    return key;
+  }
+
   const OFFLINE_TOPIC_SEEDS = [
     {
       name: "Teoria da História e Historiografia",
+      nameEn: "Theory of History & Historiography",
       keywords: [
         "historiografia", "historiography", "historiografico", "historicidade", "historicity",
         "teoria", "koselleck", "hartog", "ricoeur", "benjamin", "bloch", "braudel", "white",
@@ -55,6 +70,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Teoria Social, Filosofia Política e Capitalismo",
+      nameEn: "Social Theory, Political Philosophy & Capitalism",
       keywords: [
         "marx", "marxismo", "marxism", "marxist", "gramsci", "capital", "capitalismo", "capitalism",
         "capitalista", "economia", "economy", "economic", "politica", "political", "soberania",
@@ -67,6 +83,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Estudos Pós-Coloniais, Colonialismo e Imperialismo",
+      nameEn: "Postcolonial Studies, Colonialism & Imperialism",
       keywords: [
         "colonial", "colonialismo", "colonialism", "pos-colonial", "postcolonial", "post-colonial",
         "decolonial", "descolonial", "imperialismo", "imperialism", "imperio", "empire", "imperial",
@@ -78,6 +95,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Ásia Oriental, Japão e Coreia",
+      nameEn: "East Asia, Japan & Korea",
       keywords: [
         "japao", "japan", "japanese", "japones", "japonesa", "coreia", "korea", "korean", "coreano",
         "coreana", "china", "chinese", "chines", "asia", "asian", "asiatico", "east", "manchuria",
@@ -88,6 +106,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Memória, Trauma e Justiça de Transição",
+      nameEn: "Memory, Trauma & Transitional Justice",
       keywords: [
         "memoria", "memory", "memories", "trauma", "traumatic", "traumatico", "testemunho",
         "testimony", "witness", "witnesses", "testify", "esquecimento", "forgetting", "luto",
@@ -101,6 +120,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Gênero, Feminismo e Violência Sexual",
+      nameEn: "Gender, Feminism & Sexual Violence",
       keywords: [
         "genero", "gender", "mulher", "mulheres", "woman", "women", "feminismo", "feminism",
         "feminista", "feminist", "sexual", "sexualidade", "sexuality", "estupro", "rape",
@@ -112,6 +132,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Escravidão, Raça e Mundo Atlântico",
+      nameEn: "Slavery, Race & Atlantic World",
       keywords: [
         "escravidao", "slavery", "escravo", "escravos", "slave", "slaves", "abolição", "abolicao",
         "abolition", "alforria", "atlantico", "atlantic", "raca", "race", "racial", "racismo",
@@ -121,6 +142,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "História do Brasil e da América Latina",
+      nameEn: "History of Brazil & Latin America",
       keywords: [
         "brasil", "brazil", "brazilian", "brasileiro", "brasileira", "america", "latina", "latin",
         "ibero", "ibero-americano", "rio", "janeiro", "paulo", "bahia", "minas", "nordeste",
@@ -131,6 +153,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Cultura, Cinema, Literatura e Artes",
+      nameEn: "Culture, Cinema, Literature & Arts",
       keywords: [
         "cultura", "culture", "cultural", "cinema", "film", "filme", "filmes", "imagem", "imagens",
         "image", "images", "estetica", "aesthetics", "arte", "artes", "art", "literatura",
@@ -142,6 +165,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Educação, Ensino de História e Pedagogia",
+      nameEn: "Education, History Teaching & Pedagogy",
       keywords: [
         "educacao", "education", "educational", "ensino", "teaching", "didatica", "didactics",
         "pedagogia", "pedagogy", "escola", "school", "escolar", "curriculo", "curriculum",
@@ -151,6 +175,7 @@ var EixosClassifier = (function () {
     },
     {
       name: "Oriente Médio, Conflitos e História Global",
+      nameEn: "Middle East, Conflicts & Global History",
       keywords: [
         "palestina", "palestine", "palestinian", "israel", "israeli", "nakba", "sionismo",
         "zionist", "oriente", "middle", "east", "arabe", "arab", "islam", "islamico",
@@ -160,6 +185,10 @@ var EixosClassifier = (function () {
       ],
     },
   ];
+
+  function getSeedLocalizedName(seed, settings) {
+    return getActiveLocale(settings) === "en-US" ? seed.nameEn || seed.name : seed.name;
+  }
 
   function scoreAgainstTopicSeeds(itemVec, maxTargets) {
     const scored = [];
@@ -320,8 +349,7 @@ var EixosClassifier = (function () {
           engineUsed: "offline",
           selectedKeys: [],
           proposedNew: [],
-          reason:
-            "A coleção destino está vazia e a criação de novas subcoleções está desativada.",
+          reason: tr("clsReasonEmptyDisabled", null, settings),
           suggestNewHint: true,
           scores: [],
         };
@@ -335,21 +363,23 @@ var EixosClassifier = (function () {
           selectedKeys: [],
           proposedNew: seedMatches.map((m) => ({
             parentKey: "__ROOT__",
-            name: formatNumberedAxisName(m.seed.name, nextNum++),
+            name: formatNumberedAxisName(getSeedLocalizedName(m.seed, settings), nextNum++),
           })),
-          reason: `Modo offline (pasta destino vazia): novo eixo sugerido a partir de termos como "${terms}".`,
+          reason: tr("clsReasonEmptySeed", { terms }, settings),
           suggestNewHint: true,
           scores: [],
         };
       }
       const firstCleanTag = (itemMeta.tags || []).find((t) => String(t).trim().length >= 3);
-      const fallbackRaw = firstCleanTag ? String(firstCleanTag).trim() : "Geral e Outros Temas";
+      const fallbackRaw = firstCleanTag
+        ? String(firstCleanTag).trim()
+        : tr("generalAxisName", null, settings);
       const fallbackName = formatNumberedAxisName(fallbackRaw, getNextRootAxisNumber(targetTree));
       return {
         engineUsed: "offline",
         selectedKeys: [],
         proposedNew: [{ parentKey: "__ROOT__", name: fallbackName }],
-        reason: `Modo offline (pasta destino vazia): criando eixo inicial "${fallbackName}".`,
+        reason: tr("clsReasonEmptyInitial", { name: fallbackName }, settings),
         suggestNewHint: true,
         scores: [],
       };
@@ -434,40 +464,47 @@ var EixosClassifier = (function () {
 
     if (selected.length > 0) {
       const topTerms = selected[0].matchedTerms.slice(0, 4).join(", ");
-      reason = `Modo offline (similaridade textual): termos em comum como "${topTerms || "título/tema"}".`;
+      reason = tr("clsReasonOfflineMatch", { terms: topTerms || "title/topic" }, settings);
     } else if (allowCreateNew) {
       const seedMatches = scoreAgainstTopicSeeds(itemVec, maxTargets);
       let nextNum = getNextRootAxisNumber(targetTree);
       for (const m of seedMatches) {
-        const existing = findExistingLeafByName(leaves, m.seed.name);
+        const seedName = getSeedLocalizedName(m.seed, settings);
+        const existing =
+          findExistingLeafByName(leaves, seedName) ||
+          findExistingLeafByName(leaves, m.seed.name) ||
+          findExistingLeafByName(leaves, m.seed.nameEn);
         if (existing) {
           if (!selected.some((s) => s.key === existing.key)) {
             selected.push({ key: existing.key, name: existing.name, matchedTerms: m.matchedTerms });
           }
         } else {
-          proposedNew.push({ parentKey: "__ROOT__", name: formatNumberedAxisName(m.seed.name, nextNum++) });
+          proposedNew.push({ parentKey: "__ROOT__", name: formatNumberedAxisName(seedName, nextNum++) });
         }
       }
       if (selected.length > 0 || proposedNew.length > 0) {
         const terms = seedMatches[0] ? seedMatches[0].matchedTerms.join(", ") : "";
         reason =
           proposedNew.length > 0
-            ? `Modo offline: novo eixo sugerido a partir de termos como "${terms}".`
-            : `Modo offline: correspondência temática com "${terms}".`;
+            ? tr("clsReasonOfflineNewSeed", { terms }, settings)
+            : tr("clsReasonOfflineTopicMatch", { terms }, settings);
       } else {
-        const existingFallback = findExistingLeafByName(leaves, "Geral e Outros Temas");
+        const genName = tr("generalAxisName", null, settings);
+        const existingFallback =
+          findExistingLeafByName(leaves, genName) ||
+          findExistingLeafByName(leaves, "Geral e Outros Temas") ||
+          findExistingLeafByName(leaves, "General & Other Topics");
         if (existingFallback) {
           selected.push({ key: existingFallback.key, name: existingFallback.name, matchedTerms: [] });
-          reason = `Modo offline: sem correspondência forte — encaminhado para "${existingFallback.name}".`;
+          reason = tr("clsReasonOfflineFallbackExisting", { name: existingFallback.name }, settings);
         } else {
-          const numberedFallback = formatNumberedAxisName("Geral e Outros Temas", nextNum++);
+          const numberedFallback = formatNumberedAxisName(genName, nextNum++);
           proposedNew.push({ parentKey: "__ROOT__", name: numberedFallback });
-          reason = `Modo offline: sem correspondência forte — sugerindo pasta "${numberedFallback}".`;
+          reason = tr("clsReasonOfflineFallbackNew", { name: numberedFallback }, settings);
         }
       }
     } else {
-      reason =
-        "Modo offline: pouca correspondência com os temas atuais — você pode selecionar manualmente ou criar um novo tema.";
+      reason = tr("clsReasonOfflineLow", null, settings);
     }
 
     const suggestNewHint = topScore < 0.055 || proposedNew.length > 0;
@@ -544,23 +581,25 @@ var EixosClassifier = (function () {
         }
       : null;
 
+    const isEn = getActiveLocale(settings) === "en-US";
+    const outputLangLabel = isEn ? "English" : "Portuguese (PT-BR)";
     return (
-      `Você é um bibliotecário e historiador especialista organizando uma biblioteca acadêmica no Zotero.\n` +
-      `Classifique o item abaixo em 1 até ${maxTargets} subcoleções temáticas.\n\n` +
-      `INSTRUÇÕES DE ACURÁCIA (CRUZAMENTO IA + PALAVRAS-CHAVE + METADADOS DO ITEM PAI):\n` +
-      `1. Considere TODOS os metadados do item pai (título, autores, ano, editora, coleção/série, DOI, ISBN, revista, resumo, tags) e seu conhecimento bibliográfico sobre a obra/autor.\n` +
-      `2. Compare sua análise semântica com a ANALISE_POR_PALAVRAS_CHAVE fornecida abaixo: confirme quando concordarem, corrija falsos positivos de palavras-chave e combine eixos complementares em obras interdisciplinares.\n` +
-      `3. Use EXATAMENTE as chaves ("key") listadas em ESTRUTURA.\n` +
+      `You are an expert academic librarian organizing a Zotero library.\n` +
+      `Classify the item below into 1 up to ${maxTargets} thematic subcollections.\n\n` +
+      `ACCURACY RULES (AI + KEYWORD CROSS-CHECK + FULL PARENT METADATA):\n` +
+      `1. Consider ALL parent item metadata (title, authors, year, publisher, series, DOI, ISBN, journal, abstract, tags) plus your bibliographic knowledge of the work/author.\n` +
+      `2. Compare your semantic analysis with KEYWORD_ANALYSIS below: confirm agreements, fix keyword false positives, and combine complementary axes for interdisciplinary works.\n` +
+      `3. Use EXACTLY the keys ("key") listed in TREE.\n` +
       `4. ${
         allowNew
-          ? `Se o item tratar de tema realmente novo que não se encaixe bem nas pastas existentes, proponha no máximo 1 nova subcoleção em "new_subcollections" (com "parent_key" de um eixo existente ou "__ROOT__"). Use numeração no padrão "01 - Nome do Eixo" para novos eixos na raiz (ou "N.M Nome do Subtema" dentro de um eixo numerado).`
-          : `NÃO proponha novas subcoleções ("new_subcollections": []).`
+          ? `If the item clearly introduces a new topic not well covered by existing folders, propose at most 1 new subcollection in "new_subcollections" (with "parent_key" of an existing axis or "__ROOT__"). Write new folder names in ${outputLangLabel} using numbered format "01 - Axis Name" (or "N.M Subtheme Name" inside a numbered axis).`
+          : `Do NOT propose new subcollections ("new_subcollections": []).`
       }\n` +
-      `5. Responda EXCLUSIVAMENTE com JSON válido:\n` +
-      `{"selected_keys":["KEY1"],"new_subcollections":[{"parent_key":"__ROOT__","name":"Nome"}],"reason":"Justificativa curta (1 frase) mencionando o cruzamento IA + palavras-chave."}\n\n` +
-      `ESTRUTURA:${JSON.stringify(treeSummary)}\n` +
-      `ANALISE_POR_PALAVRAS_CHAVE:${JSON.stringify(kwSummary)}\n` +
-      `ITEM_PAI:${JSON.stringify(compactParentMeta(itemMeta))}`
+      `5. Reply EXCLUSIVELY with valid JSON (write "reason" in ${outputLangLabel}, 1 short sentence mentioning AI + keyword cross-check):\n` +
+      `{"selected_keys":["KEY1"],"new_subcollections":[{"parent_key":"__ROOT__","name":"01 - Name"}],"reason":"Short justification."}\n\n` +
+      `TREE:${JSON.stringify(treeSummary)}\n` +
+      `KEYWORD_ANALYSIS:${JSON.stringify(kwSummary)}\n` +
+      `PARENT_ITEM:${JSON.stringify(compactParentMeta(itemMeta))}`
     );
   }
 
@@ -708,7 +747,7 @@ var EixosClassifier = (function () {
       messages: [
         {
           role: "system",
-          content: "Responda sempre apenas com JSON válido conforme o esquema solicitado.",
+          content: "Always reply exclusively with valid JSON matching the requested schema.",
         },
         { role: "user", content: prompt },
       ],
@@ -802,7 +841,7 @@ var EixosClassifier = (function () {
       engineUsed: `ai:${settings.aiProvider}`,
       selectedKeys: selectedKeys.slice(0, settings.maxTargets || 3),
       proposedNew: proposedNew.slice(0, 2),
-      reason: String(parsed.reason || "Classificado via cruzamento IA + palavras-chave.").trim(),
+      reason: String(parsed.reason || tr("clsReasonAIHybrid", null, settings)).trim(),
       suggestNewHint: proposedNew.length > 0,
       scores: offlineAnalysis.scores || [],
     };
@@ -824,7 +863,11 @@ var EixosClassifier = (function () {
           throw err;
         }
         const fallback = classifyOffline(itemMeta, targetTree, settings);
-        fallback.reason = `Fallback offline (IA indisponível: ${err.message || err}). ${fallback.reason}`;
+        fallback.reason = tr(
+          "clsReasonFallbackAI",
+          { err: err.message || err, base: fallback.reason },
+          settings
+        );
         fallback.aiError = String(err.message || err);
         return fallback;
       }
@@ -832,13 +875,13 @@ var EixosClassifier = (function () {
 
     const offline = classifyOffline(itemMeta, targetTree, settings);
     if (engine === "hybrid" && !hasAIConfigured(settings)) {
-      offline.reason = `Modo offline ativo (configure uma chave de IA nas preferências para classificação semântica avançada). ${offline.reason}`;
+      offline.reason = tr("clsReasonHybridNoKey", { base: offline.reason }, settings);
     }
     return offline;
   }
 
   async function testAIConnection(settings) {
-    const pingPrompt = 'Responda apenas com este JSON: {"ok": true, "message": "Conexão OK"}';
+    const pingPrompt = 'Reply ONLY with this JSON: {"ok": true, "message": "Connection OK"}';
     if (settings.aiProvider === "gemini") {
       return callGemini(pingPrompt, settings);
     }
@@ -1054,10 +1097,15 @@ var EixosClassifier = (function () {
     const existCount = groups.length - newCount;
     const reason =
       existCount > 0
-        ? `Plano gerado em Modo Offline: ${existCount} eixo(s) existente(s) reutilizado(s)${
-            newCount > 0 ? ` + ${newCount} novo(s) eixo(s) sugerido(s)` : ""
-          }.`
-        : `Plano inicial gerado em Modo Offline: ${newCount} eixo(s) temático(s) sugerido(s) para ${itemsMeta.length} item(ns).`;
+        ? tr(
+            "clsPlanOffExisting",
+            {
+              exist: existCount,
+              newPart: newCount > 0 ? tr("clsPlanOffNewPart", { count: newCount }, settings) : "",
+            },
+            settings
+          )
+        : tr("clsPlanOffInitial", { count: newCount, items: itemsMeta.length }, settings);
 
     return {
       engineUsed: "offline",
@@ -1122,31 +1170,34 @@ var EixosClassifier = (function () {
 
     const offlineAxesSummary = (offlinePlan.groups || []).map((g) => g.name);
 
+    const isEn = getActiveLocale(settings) === "en-US";
+    const outputLangLabel = isEn ? "English" : "Portuguese (PT-BR)";
+
     const runChunk = async (chunk, sharedNewAxes) => {
       const prompt =
-        `Você é um bibliotecário e historiador especialista organizando uma coleção no Zotero.\n` +
-        `Classifique TODOS os ${chunk.length} itens abaixo (1 até ${maxTargets} eixos por item) cruzando:\n` +
-        `(a) os metadados completos do item pai (título, autores, editora, revista, série, DOI, ISBN, tags) + seu conhecimento bibliográfico da obra;\n` +
-        `(b) o campo "kw_hint" gerado pela análise local por palavras-chave — confirme quando concordar e corrija quando a palavra-chave induzir erro.\n\n` +
-        `REGRAS:\n` +
+        `You are an expert academic librarian organizing a Zotero collection.\n` +
+        `Classify ALL ${chunk.length} items below (1 to ${maxTargets} axes per item) by cross-checking:\n` +
+        `(a) full parent item metadata (title, authors, publisher, journal, series, DOI, ISBN, tags) + your bibliographic knowledge;\n` +
+        `(b) the "kw_hint" field from local keyword analysis — confirm agreements and fix keyword false positives.\n\n` +
+        `RULES:\n` +
         `1. ${
           existingLeaves.length > 0
-            ? `Priorize usar as pastas EXISTENTES (informando "existing_key").`
-            : `Pasta destino vazia — crie entre 4 e 10 eixos temáticos coerentes em português.`
+            ? `Prefer EXISTING folders listed below (provide "existing_key").`
+            : `Destination folder is empty — create 4 to 10 coherent thematic axes in ${outputLangLabel}.`
         }\n` +
         (manualList.length > 0
-          ? `2. O usuário definiu manualmente estes índices (USE-OS com os nomes exatos quando aplicável): ${JSON.stringify(manualList)}.\n`
+          ? `2. User manually created these indices (USE their exact names when applicable): ${JSON.stringify(manualList)}.\n`
           : "") +
         `3. ${
           allowNew
-            ? `Pode propor novos eixos ("existing_key": null, "name": "01 - Nome do Eixo" em PT-BR, sempre começando com numeração "01 - ", "02 - ", etc.), reutilizando nomes já sugeridos quando couber.`
-            : `NÃO proponha novos eixos; use apenas "existing_key".`
+            ? `You may propose new axes ("existing_key": null, "name": "01 - Axis Name" in ${outputLangLabel}, always starting with "01 - ", "02 - ", etc.), reusing already proposed names whenever appropriate.`
+            : `Do NOT propose new axes; use only "existing_key".`
         }\n` +
-        `4. Responda EXCLUSIVAMENTE com JSON válido:\n` +
-        `{"axes":[{"existing_key":null,"name":"Nome do Eixo","item_ids":[1,2]}],"summary":"Resumo curto."}\n\n` +
-        `PASTAS_EXISTENTES:${JSON.stringify(existingLeaves)}\n` +
-        `EIXOS_PALAVRAS_CHAVE:${JSON.stringify(sharedNewAxes.length > 0 ? sharedNewAxes : offlineAxesSummary)}\n` +
-        `ITENS:${JSON.stringify(chunk)}`;
+        `4. Reply EXCLUSIVELY with valid JSON:\n` +
+        `{"axes":[{"existing_key":null,"name":"01 - Axis Name","item_ids":[1,2]}],"summary":"Short summary in ${outputLangLabel}."}\n\n` +
+        `EXISTING_FOLDERS:${JSON.stringify(existingLeaves)}\n` +
+        `KEYWORD_AXES:${JSON.stringify(sharedNewAxes.length > 0 ? sharedNewAxes : offlineAxesSummary)}\n` +
+        `ITEMS:${JSON.stringify(chunk)}`;
 
       if (settings.aiProvider === "gemini") {
         return callGemini(prompt, settings, 45000);
@@ -1315,11 +1366,20 @@ var EixosClassifier = (function () {
 
     const extraNote =
       reconciledFromOffline > 0
-        ? ` (+ ${reconciledFromOffline} completado(s) via palavras-chave)`
+        ? tr("clsPlanAIReconciled", { count: reconciledFromOffline }, settings)
         : "";
     return {
       engineUsed: `ai:${settings.aiProvider}`,
-      reason: `Cruzamento IA (${settings.aiProvider}) + palavras-chave: ${groups.length} eixo(s) para ${itemsMeta.length} item(ns)${extraNote}.`,
+      reason: tr(
+        "clsPlanAI",
+        {
+          provider: settings.aiProvider,
+          axes: groups.length,
+          items: itemsMeta.length,
+          extra: extraNote,
+        },
+        settings
+      ),
       groups,
       unassigned,
     };
@@ -1337,13 +1397,17 @@ var EixosClassifier = (function () {
         Zotero.debug("EixosClassifier.buildBatchPlan AI error: " + err);
         if (engine === "ai") throw err;
         const fallback = buildBatchPlanOffline(itemsMeta, targetTree, settings, customAxes);
-        fallback.reason = `Fallback offline (IA indisponível: ${err.message || err}). ${fallback.reason}`;
+        fallback.reason = tr(
+          "clsReasonFallbackAI",
+          { err: err.message || err, base: fallback.reason },
+          settings
+        );
         return fallback;
       }
     }
     const offline = buildBatchPlanOffline(itemsMeta, targetTree, settings, customAxes);
     if (engine === "hybrid" && !hasAIConfigured(settings)) {
-      offline.reason = `Modo offline ativo (configure uma chave de IA para cruzamento semântico + palavras-chave). ${offline.reason}`;
+      offline.reason = tr("clsReasonHybridNoKey", { base: offline.reason }, settings);
     }
     return offline;
   }

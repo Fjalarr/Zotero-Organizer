@@ -1,6 +1,9 @@
-/* global Zotero, ChromeUtils, EixosConfig, EixosOrganizer, EixosClassifier */
+/* global Zotero, ChromeUtils, EixosI18n, EixosConfig, EixosOrganizer, EixosClassifier */
 
 var EixosMain = (function () {
+  function tr(key, params) {
+    return typeof EixosI18n !== "undefined" ? EixosI18n.t(key, params) : key;
+  }
   let _setTimeout = typeof setTimeout === "function" ? setTimeout : null;
   let _clearTimeout = typeof clearTimeout === "function" ? clearTimeout : null;
   try {
@@ -25,7 +28,7 @@ var EixosMain = (function () {
   function showToast(headline, lines, closeMs) {
     try {
       const pw = new Zotero.ProgressWindow({ closeOnClick: true });
-      pw.changeHeadline(headline || "Eixos Organizer");
+      pw.changeHeadline(headline || tr("pluginName"));
       if (Array.isArray(lines)) {
         for (const ln of lines) {
           pw.addDescription(String(ln));
@@ -91,6 +94,7 @@ var EixosMain = (function () {
     const itemMeta = EixosOrganizer.getItemMetadata(item);
     const sourceCol = Zotero.Collections.getByLibraryAndKey(rule.libraryID || item.libraryID, rule.sourceKey);
     const dialogArgs = {
+      i18n: EixosI18n,
       itemMeta,
       sourceName: sourceCol ? sourceCol.name : rule.sourceKey,
       targetTree,
@@ -182,14 +186,18 @@ var EixosMain = (function () {
       recentHandled.set(`${rule.sourceKey}:${item.id}`, Date.now());
       const createdMsg =
         applied.createdNames.length > 0
-          ? ` (nova pasta: ${applied.createdNames.join(", ")})`
+          ? tr("toastNewFolderSuffix", { names: applied.createdNames.join(", ") })
           : "";
       if (!opts.silentToast) {
         showToast(
-          "Eixos Organizer — Item organizado",
+          tr("toastOrganizedTitle"),
           [
             `“${itemMeta.title.slice(0, 72)}”`,
-            `Anexado em ${targetTree.root.name} → ${applied.linkedNames.join(" • ")}${createdMsg}`,
+            tr("toastLinkedLine", {
+              root: targetTree.root.name,
+              names: applied.linkedNames.join(" • "),
+              created: createdMsg,
+            }),
           ],
           5500
         );
@@ -199,11 +207,10 @@ var EixosMain = (function () {
 
     if (!opts.silentToast && !useInteractive) {
       showToast(
-        "Eixos Organizer — Sem alteração",
+        tr("toastNoChangeTitle"),
         [
           `“${itemMeta.title.slice(0, 72)}”`,
-          classification.reason ||
-            "Nenhuma pasta correspondente encontrada (clique com botão direito no item para classificar manualmente).",
+          classification.reason || tr("toastNoChangeFallback"),
         ],
         5500
       );
@@ -279,7 +286,7 @@ var EixosMain = (function () {
     const pane = win && win.ZoteroPane;
     const col = collection || (pane && pane.getSelectedCollection());
     if (!col) {
-      showToast("Eixos Organizer", ["Selecione primeiro uma coleção no painel esquerdo."], 4000);
+      showToast(tr("pluginName"), [tr("toastSelectCollection")], 4000);
       return;
     }
 
@@ -292,11 +299,8 @@ var EixosMain = (function () {
     );
     if (isTargetRoot) {
       showToast(
-        "Eixos Organizer",
-        [
-          `“${col.name}” já é uma subcoleção temática de destino.`,
-          "Execute 'Organizar por Eixo e Tema' na pasta principal (ex.: Livros ou Minha biblioteca).",
-        ],
+        tr("pluginName"),
+        [tr("toastIsTargetRoot1", { name: col.name }), tr("toastIsTargetRoot2")],
         5500
       );
       return;
@@ -341,11 +345,11 @@ var EixosMain = (function () {
 
     if (pending.length === 0) {
       showToast(
-        "Eixos Organizer",
+        tr("pluginName"),
         [
           existingTarget
-            ? `Todos os itens de “${col.name}” já estão organizados em “${existingTarget.name}”!`
-            : `A coleção “${col.name}” não possui livros/artigos diretos para organizar.`,
+            ? tr("toastAllOrganized", { source: col.name, dest: existingTarget.name })
+            : tr("toastNoDirectItems", { source: col.name }),
         ],
         4500
       );
@@ -357,7 +361,7 @@ var EixosMain = (function () {
       .filter((m) => m && m.title);
 
     if (itemsMeta.length === 0) {
-      showToast("Eixos Organizer", [`Nenhum item com título válido encontrado em “${col.name}”.`], 4500);
+      showToast(tr("pluginName"), [tr("toastNoValidTitle", { source: col.name })], 4500);
       return;
     }
 
@@ -372,11 +376,11 @@ var EixosMain = (function () {
       effectiveSettings.engine === "ai" ||
       (effectiveSettings.engine === "hybrid" && EixosClassifier.hasAIConfigured(effectiveSettings));
     let loadingToast = showToast(
-      "Eixos Organizer — Gerando plano",
+      tr("toastPlanningTitle"),
       [
         usingAI
-          ? `Analisando ${itemsMeta.length} item(ns) de “${col.name}” com IA + palavras-chave…`
-          : `Analisando ${itemsMeta.length} item(ns) de “${col.name}” (modo offline)…`,
+          ? tr("toastPlanningAI", { count: itemsMeta.length, source: col.name })
+          : tr("toastPlanningOff", { count: itemsMeta.length, source: col.name }),
       ],
       60000
     );
@@ -391,7 +395,7 @@ var EixosMain = (function () {
           loadingToast.close();
         } catch (e) {}
       }
-      showToast("Eixos Organizer — Erro ao gerar plano", [String(err.message || err)], 6500);
+      showToast(tr("toastPlanErrTitle"), [String(err.message || err)], 6500);
       return;
     }
 
@@ -402,7 +406,7 @@ var EixosMain = (function () {
     }
 
     const itemTitleByID = new Map(itemsMeta.map((m) => [m.id, m.title]));
-    const defaultNewRootName = `${col.name} - Por Eixo e Tema`;
+    const defaultNewRootName = `${col.name} - ${tr("defaultRootSuffix")}`;
 
     // 4. Execution + real DB verification callback (runs while Plan dialog remains open!)
     const executePlanInDialog = async (payload, onProgress) => {
@@ -414,7 +418,7 @@ var EixosMain = (function () {
         }
       };
 
-      reportProgress(10, "Preparando subcoleção temática destino…");
+      reportProgress(10, tr("progPrepTarget"));
       let targetRootCol = null;
       if (existingTarget) {
         targetRootCol = Zotero.Collections.getByLibraryAndKey(libID, existingTarget.key);
@@ -438,7 +442,7 @@ var EixosMain = (function () {
 
       // Create/resolve all approved axis subcollections (including empty manual indices!)
       const totalGroups = (payload.groups || []).length;
-      reportProgress(18, `Criando/validando ${totalGroups} eixo(s)…`);
+      reportProgress(18, tr("progCreatingAxes", { count: totalGroups }));
       const itemToColIDs = new Map();
       const colNameByID = new Map();
       const createdAxisNames = [];
@@ -447,7 +451,7 @@ var EixosMain = (function () {
         const grp = payload.groups[gIdx];
         reportProgress(
           18 + Math.round(((gIdx + 1) / Math.max(1, totalGroups)) * 12),
-          `Preparando eixo ${gIdx + 1}/${totalGroups}: ${grp.name}`
+          tr("progPreparingAxis", { idx: gIdx + 1, total: totalGroups, name: grp.name })
         );
         let axisCol = null;
         if (!grp.isNew && grp.existingKey) {
@@ -499,7 +503,7 @@ var EixosMain = (function () {
           }
           if (entries.length > 0 && (idx % 3 === 0 || idx === entries.length - 1)) {
             const pct = basePct + Math.round(((idx + 1) / entries.length) * spanPct);
-            reportProgress(pct, `Indexando itens (${idx + 1}/${entries.length})…`);
+            reportProgress(pct, tr("progIndexingItems", { done: idx + 1, total: entries.length }));
             if (Zotero.Promise && typeof Zotero.Promise.delay === "function") {
               await Zotero.Promise.delay(5);
             }
@@ -511,7 +515,7 @@ var EixosMain = (function () {
       const { linkedItems, totalLinks } = await linkBatch(itemToColIDs, 30, 50);
 
       // Verify EVERY planned item/link directly against Zotero's collectionItems table!
-      reportProgress(85, "Verificando indexação real no banco do Zotero…");
+      reportProgress(85, tr("progVerifyingDB"));
       let verification = await EixosOrganizer.verifyItemsIndexed(
         libID,
         itemToColIDs,
@@ -521,7 +525,7 @@ var EixosMain = (function () {
 
       // Automatic retry once if any link failed verification on first pass
       if (verification.missing && verification.missing.length > 0) {
-        reportProgress(92, `Reenviando ${verification.missing.length} item(ns) pendente(s) na verificação…`);
+        reportProgress(92, tr("progRetryingMissing", { count: verification.missing.length }));
         const retryMap = new Map();
         for (const m of verification.missing) {
           retryMap.set(m.itemID, new Set(m.missingColIDs));
@@ -535,7 +539,7 @@ var EixosMain = (function () {
         );
       }
 
-      reportProgress(100, "Verificação concluída!");
+      reportProgress(100, tr("progDone"));
       return {
         targetRootName: targetRootCol.name,
         createdAxisNames,
@@ -547,6 +551,7 @@ var EixosMain = (function () {
 
     // 5. Open ONE review + live verified execution dialog
     openPlanDialog({
+      i18n: EixosI18n,
       sourceName: col.name,
       totalPending: itemsMeta.length,
       existingTarget,
@@ -635,7 +640,7 @@ var EixosMain = (function () {
               enqueueAddedItem(task.collectionID, task.itemID, (task.attempt || 0) + 1);
             }, 2500);
           } else {
-            showToast("Eixos Organizer — Aviso", [String(err.message || err)], 6000);
+            showToast(tr("toastWarnTitle"), [String(err.message || err)], 6000);
           }
         }
       }
@@ -679,18 +684,14 @@ var EixosMain = (function () {
       items.push(resolved);
     }
     if (items.length === 0) {
-      showToast("Eixos Organizer", ["Selecione ao menos um livro, artigo ou PDF."], 3500);
+      showToast(tr("pluginName"), [tr("toastSelectItem")], 3500);
       return;
     }
 
     const settings = EixosConfig.getSettings();
     const enabledRules = settings.rules.filter((r) => r.enabled);
     if (enabledRules.length === 0) {
-      showToast(
-        "Eixos Organizer",
-        ["Nenhuma pasta gerenciada configurada ainda. Abrindo configurações…"],
-        4000
-      );
+      showToast(tr("pluginName"), [tr("toastNoRulesOpening")], 4000);
       openPreferences();
       return;
     }
@@ -729,7 +730,7 @@ var EixosMain = (function () {
           break;
         }
       } catch (err) {
-        showToast("Eixos Organizer — Erro", [String(err.message || err)], 6000);
+        showToast(tr("toastErrTitle"), [String(err.message || err)], 6000);
       }
     }
   }
@@ -743,24 +744,24 @@ var EixosMain = (function () {
       const payload = await EixosConfig.loadRulesFromSyncNote();
       if (payload && payload.rules) {
         showToast(
-          "Eixos Organizer",
-          [`Configuração sincronizada carregada (${payload.rules.length} regra(s) de pasta).`],
+          tr("pluginName"),
+          [tr("toastSyncedLoaded", { count: payload.rules.length })],
           4500
         );
       } else {
         const discovered = await EixosConfig.autoDiscoverRules();
         showToast(
-          "Eixos Organizer",
+          tr("pluginName"),
           [
             discovered.length > 0
-              ? `Nenhuma nota sincronizada encontrada; ${discovered.length} par(es) detectado(s) localmente.`
-              : "Nenhuma configuração sincronizada encontrada ainda na biblioteca.",
+              ? tr("toastAutoDiscovered", { count: discovered.length })
+              : tr("toastNoSyncedYet"),
           ],
           5000
         );
       }
     } catch (err) {
-      showToast("Eixos Organizer — Erro", [String(err.message || err)], 6000);
+      showToast(tr("toastErrTitle"), [String(err.message || err)], 6000);
     }
   }
 
@@ -855,6 +856,7 @@ var EixosMain = (function () {
     Zotero.EixosOrganizer = {
       pluginID,
       rootURI,
+      i18n: EixosI18n,
       config: EixosConfig,
       organizer: EixosOrganizer,
       classifier: EixosClassifier,
@@ -878,7 +880,7 @@ var EixosMain = (function () {
         pluginID,
         id: "eixos-organizer-prefpane",
         src: rootURI + "chrome/content/preferences.xhtml",
-        label: "Eixos Organizer",
+        label: "Organizer",
         image: rootURI + "chrome/content/icon.svg",
         scripts: [rootURI + "chrome/content/preferences.js"],
         stylesheets: [rootURI + "chrome/content/preferences.css"],

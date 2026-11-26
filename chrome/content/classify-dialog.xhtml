@@ -1,50 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-BR">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Eixos Organizer — Classificar Item</title>
+  <title>Organizer — Classify Item</title>
   <link rel="stylesheet" href="chrome://eixos-organizer/content/classify-dialog.css" />
 </head>
 <body>
   <div class="dlg-root">
     <header class="dlg-header">
-      <div class="dlg-item-title" id="dlg-title">Carregando…</div>
+      <div class="dlg-item-title" id="dlg-title">…</div>
       <div class="dlg-item-meta" id="dlg-meta"></div>
       <div class="dlg-route" id="dlg-route"></div>
     </header>
 
     <section class="dlg-reason-box">
-      <span class="dlg-badge" id="dlg-engine-badge">Motor</span>
+      <span class="dlg-badge" id="dlg-engine-badge"></span>
       <span class="dlg-reason-text" id="dlg-reason"></span>
     </section>
 
     <section class="dlg-toolbar">
-      <input id="dlg-search" type="search" placeholder="Filtrar eixos ou temas…" />
+      <input id="dlg-search" type="search" placeholder="" />
       <div class="dlg-toolbar-btns">
-        <button id="dlg-btn-re-ai" type="button" class="dlg-btn">Reanalisar com IA</button>
-        <button id="dlg-btn-re-off" type="button" class="dlg-btn">Reanalisar Offline</button>
+        <button id="dlg-btn-re-ai" type="button" class="dlg-btn">Re-analyze with AI</button>
+        <button id="dlg-btn-re-off" type="button" class="dlg-btn">Re-analyze Offline</button>
       </div>
     </section>
 
     <main class="dlg-tree" id="dlg-tree"></main>
 
     <section class="dlg-new-box" id="dlg-new-box">
-      <div class="dlg-new-title">Criar nova subcoleção / tema (opcional)</div>
+      <div class="dlg-new-title" id="dlg-new-title">Create new subcollection / theme (optional)</div>
       <div class="dlg-new-list" id="dlg-new-list"></div>
       <div class="dlg-new-form">
         <select id="dlg-new-parent"></select>
-        <input id="dlg-new-name" type="text" placeholder="Ex.: 9.3 História Ambiental (ou novo eixo)" />
-        <button id="dlg-btn-add-new" type="button" class="dlg-btn">+ Incluir</button>
+        <input id="dlg-new-name" type="text" placeholder="" />
+        <button id="dlg-btn-add-new" type="button" class="dlg-btn">+ Add</button>
       </div>
     </section>
 
     <footer class="dlg-footer">
-      <div class="dlg-summary" id="dlg-summary">0 tema(s) selecionado(s)</div>
+      <div class="dlg-summary" id="dlg-summary"></div>
       <div class="dlg-footer-btns">
-        <button id="dlg-btn-abort" type="button" class="dlg-btn dlg-btn-danger" style="display:none">Cancelar Lote</button>
-        <button id="dlg-btn-cancel" type="button" class="dlg-btn">Pular</button>
-        <button id="dlg-btn-confirm" type="button" class="dlg-btn dlg-btn-primary">Confirmar e Vincular</button>
+        <button id="dlg-btn-abort" type="button" class="dlg-btn dlg-btn-danger" style="display:none">Cancel Batch</button>
+        <button id="dlg-btn-cancel" type="button" class="dlg-btn">Skip</button>
+        <button id="dlg-btn-confirm" type="button" class="dlg-btn dlg-btn-primary">Confirm &amp; Link</button>
       </div>
     </footer>
   </div>

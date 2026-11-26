@@ -1,244 +1,263 @@
-# Eixos Organizer — Plugin para Zotero (7 / 8 / 10)
+**[English](README.md) | [Português (Brasil)](README.pt-BR.md)**
 
-Plugin **100% não-destrutivo** para o Zotero que organiza automaticamente livros, artigos, teses e PDFs em **subcoleções por Eixo e Tema** — com motor **híbrido (IA + modo offline)**, janela interativa de confirmação e **compartilhamento de configuração entre usuários da mesma biblioteca / WebDAV**.
+# Organizer — Zotero Plugin (Zotero 7 / 8 / 10)
 
----
+> **v1.5.0 — First Stable Public Release**
 
-## Sumário
-
-- [Visão geral](#visão-geral)
-- [Garantias de segurança](#garantias-de-segurança)
-- [Instalação no Zotero](#instalação-no-zotero)
-- [Primeiros passos](#primeiros-passos)
-- [Motor híbrido: IA + Modo Offline](#motor-híbrido-ia--modo-offline)
-- [Compartilhamento com equipe (Zotero Sync / WebDAV)](#compartilhamento-com-equipe-zotero-sync--webdav)
-- [Menus e atalhos disponíveis](#menus-e-atalhos-disponíveis)
-- [Arquitetura do projeto](#arquitetura-do-projeto)
-- [Compilação e desenvolvimento](#compilação-e-desenvolvimento)
-- [Histórico de versões](#histórico-de-versões)
-- [Solução de problemas](#solução-de-problemas)
+A **100% non-destructive** Zotero plugin that automatically organizes books, articles, theses, and PDFs into **numbered thematic subcollections by Axis & Theme** — powered by a **Hybrid Engine (AI + local keyword cross-check + offline fallback)**, a **single-screen interactive Plan Preview with live Zotero database verification**, **full English / Portuguese (PT-BR) language switching**, and optional **team rule sync via Zotero Sync / WebDAV**.
 
 ---
 
-## Visão geral
+## Table of Contents
 
-Quando você mantém coleções gerais no Zotero (por exemplo, `Livros` ou `Artigos e Teses`) junto com árvores paralelas organizadas por **Eixos e Temas** (como `Livros - Por Eixo e Tema` ou `Artigos e Teses - Por Eixo e Tema`), o **Eixos Organizer** automatiza a classificação de cada novo item:
-
-1. **Monitoramento em tempo real:** ao arrastar ou salvar um novo livro, artigo, tese ou PDF em uma coleção monitorada, o plugin analisa os metadados (título, autores, ano, resumo, revista/editora e tags) frente à árvore real de eixos e temas existente.
-2. **Janela interativa (ou modo automático):** por padrão, abre uma janela limpa com os temas sugeridos já marcados para você confirmar em 1 clique, ajustar livremente ou **criar uma nova subcoleção/eixo** caso surja um tema inédito. Se preferir, pode alternar nas preferências para **modo 100% automático em segundo plano**.
-3. **Classificação interdisciplinar:** um mesmo item pode ser vinculado a múltiplos temas (até o limite configurável, padrão `3`), mantendo sempre um único registro e um único arquivo PDF/EPUB no Zotero.
-4. **Gerenciamento flexível de pastas:** você escolhe livremente quais coleções de origem mapeiam para quais árvores temáticas de destino — tudo pela interface do Zotero, sem editar código.
-
----
-
-## Garantias de segurança
-
-- **Zero exclusões:** o plugin **nunca** chama métodos de remoção ou exclusão de itens, anexos ou coleções.
-- **Pasta original intacta:** vincular um livro a novas subcoleções temáticas **não remove** o item da coleção de origem (`Livros`, `Artigos e Teses`, etc.).
-- **Arquivo único:** no Zotero, coleções funcionam como marcadores/playlists. Colocar um livro em 2 ou 3 temas **não duplica** o PDF/EPUB no disco nem no WebDAV.
-- **Chaves de API sempre locais:** se você configurar uma chave de IA (Gemini ou OpenAI), ela fica gravada exclusivamente nas preferências locais daquele computador e **nunca** é escrita na nota sincronizada da biblioteca nem incluída em exportações JSON.
+- [Overview](#overview)
+- [Safety Guarantees](#safety-guarantees)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Language Selection (English / Português)](#language-selection-english--português)
+- [Hybrid Engine: AI + Keyword Cross-Check + Offline](#hybrid-engine-ai--keyword-cross-check--offline)
+- [Team Sharing (Zotero Sync / WebDAV)](#team-sharing-zotero-sync--webdav)
+- [Menus & Shortcuts](#menus--shortcuts)
+- [Project Architecture](#project-architecture)
+- [Development & Build](#development--build)
+- [Version History](#version-history)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
 ---
 
-## Instalação no Zotero
+## Overview
 
-Compatível com **Zotero 7, 8 e 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
+When you maintain general collections in Zotero (such as `Books`, `Articles & Theses`, or `My Library`), **Organizer** builds and maintains a parallel thematic tree (`<Collection> - By Axis & Theme` in English or `<Coleção> - Por Eixo e Tema` in Portuguese) automatically:
 
-1. Baixe o arquivo da versão mais recente em **Releases** ou na pasta `dist/` deste repositório (ex.: `dist/zotero-eixos-organizer-v1.4.2.xpi`).
-2. No Zotero, abra **Ferramentas → Plugins** (*Tools → Plugins*).
-3. Clique no ícone de **engrenagem** no canto superior direito e escolha **Instalar plugin a partir de arquivo…** (*Install Plugin From File…*).
-4. Selecione o arquivo `.xpi` da versão desejada (ex.: `zotero-eixos-organizer-v1.4.2.xpi`).
-
-O plugin entra em operação imediatamente (sem precisar reiniciar o Zotero).
-
----
-
-## Primeiros passos
-
-### 1. Detecção automática de pastas
-Na primeira inicialização, se ainda não houver regras salvas, o plugin verifica automaticamente pares no padrão:
-
-- `<Nome da Coleção>` → `<Nome da Coleção> - Por Eixo e Tema`
-
-Por exemplo:
-- `Daniel / Livros` → `Daniel / Livros - Por Eixo e Tema`
-- `Daniel / Artigos e Teses` → `Daniel / Artigos e Teses - Por Eixo e Tema`
-
-### 2. Gerenciar qualquer outra coleção
-Você pode adicionar, ativar, pausar ou remover regras a qualquer momento:
-- Vá em **Editar → Configurações → Eixos Organizer** (ou **Ferramentas → Eixos Organizer → Configurar Pastas Gerenciadas e IA…**); ou
-- Clique com o **botão direito em qualquer coleção** na barra lateral do Zotero → **Eixos Organizer: Gerenciar esta coleção…**.
+1. **Single-Screen Batch Plan Preview:** right-click any collection → **Organizer: Organize by Axis & Theme (Preview Plan)…**. Organizer analyzes all pending items in memory and shows one unified plan with numbered axes (`01 - Topic`, `02 - Topic`, …). You can rename axes, check/uncheck groups, **create manual indices**, assign or remove items, and re-analyze with AI or Offline before touching anything in Zotero.
+2. **Verified Live Execution:** when you click **Run Organization**, the plan window stays open with live progress, creates/reuses the thematic subcollection and axes, links every item, and **queries Zotero's database (`collectionItems`) to verify every single link** (retrying any pending link automatically) before enabling **Done & Close**.
+3. **Automatic Subcollection Creation or Reuse:** no need to manually create an empty folder first. If a thematic subcollection already exists (either nested inside the collection or as a sibling `<Name> - By Axis & Theme` / `<Nome> - Por Eixo e Tema`), Organizer starts from it automatically; otherwise it creates `<Parent> - By Axis & Theme` inside the collection on execution.
+4. **Real-Time Auto-Organization + Notifications:** once a collection is managed, dragging or saving any new book, article, thesis, or PDF into it automatically resolves the parent item's full metadata, links it to the best matching axis/axes, and displays a notification showing exactly where it was placed.
+5. **Respects Manual Organization:** if you place an item directly inside a thematic axis yourself, Organizer recognizes it is already categorized and leaves it untouched.
+6. **Interdisciplinary Multi-Linking:** a single work can belong to multiple themes (up to a configurable limit, default `3`) while keeping a single database record and a single PDF/EPUB file.
 
 ---
 
-## Motor híbrido: IA + Modo Offline
+## Safety Guarantees
 
-O plugin opera em três modos selecionáveis nas configurações:
+- **Zero deletions:** the plugin **never** deletes items, attachments, notes, or collections.
+- **Original folder untouched:** linking an item to thematic axes **never removes** it from its source collection (`Books`, `Articles`, etc.).
+- **No duplicate files:** Zotero collections work like smart labels/playlists. Linking one PDF to 2 or 3 thematic axes **never duplicates** the file on disk or on WebDAV.
+- **API keys stay strictly local:** AI API keys (Gemini, OpenAI, etc.) are stored exclusively in your local Zotero preferences and are **never** written to synced library notes or exported to JSON.
 
-| Modo | Como funciona |
+---
+
+## Installation
+
+Compatible with **Zotero 7, 8, and 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
+
+1. Download **`organizer-v1.5.0.xpi`** from [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) or from [`dist/organizer-v1.5.0.xpi`](dist/organizer-v1.5.0.xpi).
+2. In Zotero, open **Tools → Plugins** (*Ferramentas → Plugins*).
+3. Click the **gear icon** in the top-right corner and choose **Install Plugin From File…** (*Instalar plugin a partir de arquivo…*).
+4. Select **`organizer-v1.5.0.xpi`**.
+
+The plugin activates immediately without restarting Zotero. Users upgrading from `Eixos Organizer v1.x` keep all existing managed-folder rules, settings, and API keys automatically.
+
+---
+
+## Quick Start
+
+### Option A — Organize any collection in 1 step (Recommended)
+1. Right-click any collection in Zotero's left pane (e.g. `Books` or `My Library`).
+2. Click **Organizer: Organize by Axis & Theme (Preview Plan)…**.
+3. Review the suggested numbered axes, optionally add your own manual indices with **Create manual index/axis** and **+ Assign items**, then click **Run Organization**.
+4. Wait for the green Zotero database verification check, then click **Done & Close**. Real-time monitoring is now enabled for that collection!
+
+### Option B — Configure folders and settings
+Open **Edit → Settings → Organizer** (or **Tools → Organizer → Configure Managed Folders & AI…**) to:
+- Switch the plugin language (**Auto**, **English**, or **Português (Brasil)**).
+- Click **Auto-Detect** to automatically register existing `<Collection> → <Collection> - By Axis & Theme` (or `Por Eixo e Tema`) pairs.
+- Add, pause, inspect, or remove managed folder rules.
+- Choose between **Automatic with notification** (default) or **Interactive** mode for newly added single items.
+
+---
+
+## Language Selection (English / Português)
+
+Starting in **`v1.5.0`**, **Organizer** is fully bilingual (**English** and **Português (Brasil)**):
+
+1. Open **Edit → Settings → Organizer**.
+2. In the **Language / Idioma** section at the top, choose:
+   - **Auto (follow Zotero language)** — automatically follows Zotero's interface locale;
+   - **English** — switches preferences, dialogs, notifications, default root suffix (`<Folder> - By Axis & Theme`), offline topic seeds, and AI axis/reason prompts to English;
+   - **Português (Brasil)** — switches everything to Brazilian Portuguese (`<Pasta> - Por Eixo e Tema`, Portuguese topic seeds, and PT-BR AI prompts).
+3. The Settings panel switches languages **immediately without restarting Zotero**.
+
+---
+
+## Hybrid Engine: AI + Keyword Cross-Check + Offline
+
+Selectable in **Edit → Settings → Organizer → 3. Classification Engine**:
+
+| Mode | How it works |
 |---|---|
-| **Híbrido (padrão)** | Usa IA se houver provedor configurado; caso contrário (ou se estiver sem internet), aplica automaticamente o classificador offline por similaridade textual. |
-| **Somente IA** | Usa exclusivamente o provedor de IA configurado (ideal para classificação semântica profunda e sugestão automática de novos temas/eixos). |
-| **Somente Offline** | Não faz nenhuma chamada externa: calcula similaridade **TF-IDF** comparando título, resumo, autores e tags do item novo com os nomes das pastas e obras já existentes em cada tema. |
+| **Hybrid (default)** | Runs local keyword/TF-IDF analysis first, then sends both **full parent-item metadata** (title, authors, year, publisher, journal, series, DOI, ISBN, tags, abstract, attachment filenames) and local keyword candidates to the AI so the model cross-checks agreements, fixes keyword false positives, and reconciles any omitted items. Automatically falls back to Offline mode if no API key is configured or offline. |
+| **AI Only** | Requires a configured AI provider (still performs keyword cross-checking for maximum accuracy). |
+| **Offline Only** | Zero external API calls: computes local **TF-IDF** similarity against existing axes/items, or automatically creates numbered starter thematic axes from a built-in multilingual academic vocabulary (EN/PT/ES) and item tags when the destination is empty. |
 
-### Provedores de IA suportados
-Em **Editar → Configurações → Eixos Organizer → 3. Motor de Classificação**:
+### Supported AI Providers
+- **Google Gemini (AI Studio):** default model `gemini-3.5-flash` (supports `gemini-2.5-flash`, `gemini-3-flash-preview`, etc. with automatic low-latency `thinkingConfig` and thought-part filtering). Get a free API key at [Google AI Studio](https://aistudio.google.com/apikey).
+- **OpenAI:** default model `gpt-4o-mini`.
+- **Ollama / OpenAI-Compatible Endpoint:** ideal for 100% local LLMs (e.g. `http://localhost:11434/v1/chat/completions` with `llama3.1`).
 
-- **Google Gemini (AI Studio):** modelo padrão `gemini-2.5-flash`. Basta gerar uma API key em [Google AI Studio](https://aistudio.google.com/apikey) e colar no campo *Chave de API*.
-- **OpenAI:** modelo padrão `gpt-4o-mini`.
-- **Ollama / Endpoint compatível com OpenAI:** ideal para modelos 100% locais (ex.: `http://localhost:11434/v1/chat/completions` com `llama3.1` ou similar).
-
-Use o botão **Testar Conexão com IA** para validar a configuração antes de começar.
+Use **Test AI Connection** in Settings to verify your provider and model name before organizing.
 
 ---
 
-## Compartilhamento com equipe (Zotero Sync / WebDAV)
+## Team Sharing (Zotero Sync / WebDAV)
 
-Para que outras pessoas que usam o mesmo Zotero/WebDAV aproveitem a mesma automação:
-
-1. Envie o arquivo `.xpi` da versão atual (ex.: `zotero-eixos-organizer-v1.4.2.xpi`) para a pessoa instalar no Zotero dela.
-2. As subcoleções criadas, os vínculos dos livros/artigos e os arquivos PDF/EPUB já são sincronizados **nativamente** pelo Zotero Sync / WebDAV.
-3. Opcionalmente, o plugin também pode sincronizar apenas a **lista de pastas monitoradas** em uma nota interna da biblioteca (tag `_eixos_organizer_config`, título `[Eixos Organizer] Configuração Sincronizada (não apagar)`), para que outros computadores herdem regras personalizadas automaticamente (sem nunca salvar chaves de API).
-4. Para evitar reclassificações após o sync entre computadores, a opção **Ignorar itens que já estejam vinculados a algum eixo/tema da árvore destino** vem ativada por padrão.
-5. Caso queira compartilhar as regras com alguém que usa outra conta Zotero separada, use **Exportar JSON** e **Importar JSON** na seção 4 das configurações.
+1. Share `organizer-v1.5.0.xpi` with teammates using the same Zotero library / WebDAV.
+2. Created subcollections, item links, and PDFs/EPUBs sync **natively** via Zotero Sync / WebDAV.
+3. Optionally enable **Section 4 — Sync Plugin Rules** to share only the list of monitored folders in an internal library note (tag `_eixos_organizer_config`, never containing API keys).
+4. **Do not touch items I already placed directly inside a thematic axis** is enabled by default to avoid redundant re-classification across synced computers.
+5. To transfer rules to a completely separate Zotero account, use **Export JSON** / **Import JSON** (API keys are never exported).
 
 ---
 
-## Menus e atalhos disponíveis
+## Menus & Shortcuts
 
-- **Menu superior (`Ferramentas → Eixos Organizer`):**
-  - *Configurar Pastas Gerenciadas e IA…*
-  - *Classificar Itens Pendentes da Coleção Atual*
-  - *Recarregar Configuração Sincronizada da Biblioteca*
-- **Menu de contexto de itens (botão direito em 1 ou mais livros/artigos):**
-  - *Eixos Organizer: Classificar por Eixo e Tema…*
-- **Menu de contexto de coleções (botão direito em uma pasta):**
-  - *Eixos Organizer: Gerenciar esta coleção…*
-  - *Eixos Organizer: Classificar pendentes desta coleção*
+- **Top Menu (`Tools → Organizer`):**
+  - *Configure Managed Folders & AI…*
+  - *Organize Current Collection by Axis & Theme (Preview Plan)…*
+  - *Reload Synced Library Configuration*
+- **Item Context Menu (right-click 1 or more items/PDFs):**
+  - *Organizer: Classify by Axis & Theme…*
+- **Collection Context Menu (right-click any collection):**
+  - *Organizer: Manage this collection…*
+  - *Organizer: Organize by Axis & Theme (Preview Plan)…*
 
 ---
 
-## Arquitetura do projeto
+## Project Architecture
 
 ```text
 zotero-eixos-organizer/
-├── manifest.json                     # Metadados do plugin (Zotero 7–10)
-├── updates.json                      # Manifesto de atualizações (update_url)
-├── chrome.manifest                   # Registro de conteúdo e traduções (pt-BR / en-US)
-├── bootstrap.js                      # Ciclo de vida do plugin (startup / shutdown / registerChrome)
+├── manifest.json                     # Add-on metadata (Zotero 7–10, Organizer v1.5.0)
+├── updates.json                      # Self-hosted update manifest (update_url)
+├── chrome.manifest                   # Content & locale registration (en-US / pt-BR)
+├── bootstrap.js                      # Plugin lifecycle (startup / shutdown / registerChrome)
 ├── src/
-│   ├── config.js                     # Preferências locais, nota sincronizada, auto-detecção e JSON
-│   ├── organizer.js                  # Leitura da árvore temática e vinculação não-destrutiva
-│   ├── classifier.js                 # Motor híbrido (Gemini / OpenAI / Ollama + TF-IDF offline)
-│   └── main.js                       # Observer (collection-item), fila/debounce, menus e fluxos
+│   ├── i18n.js                       # Full runtime EN / PT-BR localization engine
+│   ├── config.js                     # Local prefs, synced note, auto-discovery & JSON I/O
+│   ├── organizer.js                  # Non-destructive tree reader, parent resolver & DB verifier
+│   ├── classifier.js                 # Hybrid AI + keyword cross-check + offline TF-IDF engine
+│   └── main.js                       # Real-time observer, retry queue, menus & plan controller
 ├── chrome/content/
-│   ├── icon.svg                      # Ícone adaptável (modo claro e escuro)
-│   ├── preferences.xhtml / .js / .css     # Painel nativo em Editar → Configurações
-│   ├── plan-dialog.xhtml / .js / .css     # Tela única de revisão e execução do plano em lote
-│   └── classify-dialog.xhtml / .js / .css # Janela interativa de confirmação para item individual
+│   ├── icon.svg                      # Adaptive light/dark icon
+│   ├── preferences.xhtml / .js / .css     # Native Settings pane with live Language selector
+│   ├── plan-dialog.xhtml / .js / .css     # Non-modal single-screen Plan Preview & verified execution
+│   └── classify-dialog.xhtml / .js / .css # Single-item interactive classification dialog
 ├── locale/
-│   ├── pt-BR/eixos-organizer.ftl     # Tradução em Português (Brasil)
-│   └── en-US/eixos-organizer.ftl     # Tradução em Inglês
-├── build.py                          # Empacotador Python (gera dist/zotero-eixos-organizer-v<versão>.xpi sem apagar antigas)
+│   ├── en-US/eixos-organizer.ftl     # English Fluent menu strings
+│   └── pt-BR/eixos-organizer.ftl     # Portuguese (Brazil) Fluent menu strings
+├── build.py                          # Python packager (builds dist/organizer-v<version>.xpi and cleans old .xpi files)
+├── README.md                         # English documentation
+├── README.pt-BR.md                   # Portuguese (Brazil) documentation
 └── dist/
-    ├── zotero-eixos-organizer-v1.0.0.xpi # Build histórica v1.0.0 (arquivada)
-    ├── zotero-eixos-organizer-v1.1.0.xpi # Build histórica v1.1.0 (arquivada)
-    ├── zotero-eixos-organizer-v1.2.0.xpi # Build histórica v1.2.0 (arquivada)
-    ├── zotero-eixos-organizer-v1.3.0.xpi # Build histórica v1.3.0 (arquivada)
-    ├── zotero-eixos-organizer-v1.4.0.xpi # Build histórica v1.4.0 (arquivada)
-    ├── zotero-eixos-organizer-v1.4.1.xpi # Build histórica v1.4.1 (arquivada)
-    └── zotero-eixos-organizer-v1.4.2.xpi # Build atual v1.4.2 pronta para instalação no Zotero
+    └── organizer-v1.5.0.xpi          # Current stable build ready for Zotero installation
 ```
+
+> **Note on `dist/`:** Starting with `v1.5.0`, `dist/` keeps only the latest stable `.xpi` package to keep the repository lightweight. All historical `.xpi` builds (`v1.0.0` – `v1.4.2`) remain archived and downloadable in [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases).
 
 ---
 
-## Compilação e desenvolvimento
+## Development & Build
 
-Pré-requisitos: **Python 3** (e opcionalmente **Node.js** para checagem de sintaxe).
+Prerequisites: **Python 3** (and optionally **Node.js** for syntax checks).
 
 ```powershell
-# Empacotar a versão definida em manifest.json (gera dist/zotero-eixos-organizer-v<versão>.xpi mantendo as anteriores)
+# Package the version defined in manifest.json -> dist/organizer-v<version>.xpi (removes older .xpi files in dist/)
 python build.py
 ```
 
-Para validar rapidamente a sintaxe de todos os scripts após alterações:
+Quick syntax check for all scripts:
 
 ```powershell
 node --check bootstrap.js
+node --check src/i18n.js
 node --check src/config.js
 node --check src/organizer.js
 node --check src/classifier.js
 node --check src/main.js
 node --check chrome/content/preferences.js
+node --check chrome/content/plan-dialog.js
 node --check chrome/content/classify-dialog.js
 ```
 
 ---
 
-## Histórico de versões
+## Version History
 
-Todas as builds `.xpi` geradas ficam preservadas em `dist/` com o número da versão no nome do arquivo (novas compilações nunca apagam as builds anteriores), com rastreabilidade completa por commit, tag Git e Release no GitHub:
+Every release is tracked via Git tags and [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases):
 
-| Versão | Data | Tag / Commit | Build `.xpi` | Resumo da evolução |
+| Version | Date | Release / Commit | Package `.xpi` | Summary |
 |---|---|---|---|---|
-| **`v1.4.2`** *(atual)* | 26/11/2026 | [`v1.4.2`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.2) | `dist/zotero-eixos-organizer-v1.4.2.xpi` | Correção do deadlock modal na execução do plano (`openDialog` não-modal + progresso ao vivo), correção visual de textos sobrepostos na lista de itens e numeração sequencial sem lacunas |
-| **`v1.4.1`** | 26/11/2026 | [`v1.4.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.1) (`e6b4480`) | `dist/zotero-eixos-organizer-v1.4.1.xpi` | Numeração automática padronizada (`01 - Tema`, `02 - Tema` e `N.M Subtema`) em eixos gerados offline, pela IA ou criados manualmente no plano |
-| **`v1.4.0`** | 26/11/2026 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) (`5ae20b5`) | `dist/zotero-eixos-organizer-v1.4.0.xpi` | Cruzamento IA + palavras-chave, metadados completos do item pai (DOI/ISBN/editora/série), API mais rápida (`thinkingConfig` + chunks paralelos), entrega garantida com retentativa, criação manual de índices no plano e verificação real no banco antes de fechar a janela |
-| **`v1.3.0`** | 26/11/2026 | [`v1.3.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.3.0) (`852b664`) | `dist/zotero-eixos-organizer-v1.3.0.xpi` | Plano completo em 1 única tela antes de executar, criação/reuso automático de `<Mãe> - Por Eixo e Tema` sem pasta vazia manual, tempo real automático com notificação e respeito à organização manual |
-| **`v1.2.0`** | 26/11/2026 | [`v1.2.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.2.0) (`e94fe5b`) | `dist/zotero-eixos-organizer-v1.2.0.xpi` | Botão `X` / `Esc` / `Cancelar Lote` encerra lote imediatamente; motor offline cria eixos iniciais automaticamente em pastas destino vazias |
-| **`v1.1.0`** | 26/11/2026 | [`v1.1.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.1.0) (`24b80ef`) | `dist/zotero-eixos-organizer-v1.1.0.xpi` | Correção de instalação no Zotero 10.0.8 (`update_url` + `registerChrome`), correção do escopo `Cu.Sandbox` nos botões de Configurações, autoria **Daniel Barreto** e builds versionadas |
-| **`v1.0.0`** | 26/11/2026 | [`v1.0.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.0.0) (`831f957`) | `dist/zotero-eixos-organizer-v1.0.0.xpi` | Lançamento inicial do plugin (motor híbrido IA + offline, janela interativa, preferências e menus) |
+| **`v1.5.0`** *(stable)* | 2026-11-26 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) | `dist/organizer-v1.5.0.xpi` | **First stable public release**: renamed to **Organizer**, full live **English / Portuguese (PT-BR)** language switcher in Settings (UI, dialogs, notifications, offline seeds & AI prompts), bilingual `README.md` + `README.pt-BR.md`, and clean `dist/` keeping only the current build |
+| **`v1.4.2`** | 2026-11-26 | [`v1.4.2`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Fixed modal `saveTx()` deadlock during plan execution (switched `plan-dialog` to non-modal with live progress), fixed Gecko `<select>` text overlap in expanded item lists, and eliminated numbering gaps |
+| **`v1.4.1`** | 2026-11-26 | [`v1.4.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Standardized sequential numbering (`01 - Topic`, `02 - Topic`, and `N.M Subtopic`) across offline, AI, and manual plan axes with prefix-aware deduplication |
+| **`v1.4.0`** | 2026-11-26 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Hybrid AI + keyword cross-check, full parent-item metadata resolution (DOI/ISBN/publisher/series), faster Gemini calls (`thinkingConfig` + parallel chunks), reliable retry delivery, manual indices inside Plan Preview, and live Zotero DB verification before closing |
+| **`v1.3.0`** | 2026-11-26 | [`v1.3.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.3.0) (`852b664`, `45d3123`) | *GitHub Release* | Single-screen Batch Plan Preview (`plan-dialog`), automatic creation/reuse of `<Parent> - Por Eixo e Tema` without manual empty folders, real-time auto-linking with notifications, and respect for manually placed items |
+| **`v1.2.0`** | 2026-11-26 | [`v1.2.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.2.0) (`e94fe5b`) | *GitHub Release* | Window `X` / `Esc` / `Cancel Batch` aborts batch immediately without reopening; offline engine auto-creates starter thematic axes on empty destination folders |
+| **`v1.1.0`** | 2026-11-26 | [`v1.1.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.1.0) (`24b80ef`) | *GitHub Release* | Zotero 10.0.8 install compatibility (`applications.zotero.update_url` + `updates.json` + `registerChrome`), fixed Zotero 10 `Cu.Sandbox` scope bug in Preferences, updated author to **Daniel Barreto**, and versioned builds |
+| **`v1.0.0`** | 2026-11-26 | [`v1.0.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.0.0) (`831f957`) | *GitHub Release* | Initial release of `Eixos Organizer` (hybrid AI + offline engine, interactive single-item dialog, preferences pane, menus, and 100% non-destructive design) |
 
-### `v1.4.2` — `dist/zotero-eixos-organizer-v1.4.2.xpi` *(atual)*
-- **Correção do travamento ao executar o plano:** alterada a janela `plan-dialog.xhtml` para **não-modal** (`openDialog` sem flag `modal`), eliminando o deadlock com `Zotero.Collection.saveTx()` / `Zotero.Item.saveTx()` no Gecko 140 e exibindo o progresso ao vivo de cada eixo criado, cada item indexado e a verificação final no banco.
-- **Correção visual na lista de itens expandida:** removidos os menus `<select>` embutidos dentro da lista rolável (que causavam sobreposição de texto no Gecko 140) e aplicado truncamento limpo com reticências e tooltip (`title`) em cada linha — a atribuição de itens a outros eixos continua disponível pelo botão **`+ Atribuir itens`** de cada eixo.
-- **Numeração sequencial sem lacunas:** novos eixos gerados pela IA agora são renumerados em sequência contínua (`01`, `02`, `03`…) sem pular números.
+### Detailed Release Notes
 
-### `v1.4.1` — `dist/zotero-eixos-organizer-v1.4.1.xpi` *(arquivada)*
-- **Numeração automática padronizada (`01 - Tema`, `02 - Tema`, …):** todos os novos eixos sugeridos (tanto no modo offline quanto na IA e nos índices criados manualmente na tela do plano) agora recebem automaticamente o prefixo sequencial `01 - `, `02 - `, `03 - `… (continuando a partir do maior número já existente na árvore, e usando `N.M Subtema` quando um subtema novo é criado dentro de um eixo numerado), com deduplicação inteligente que ignora o prefixo numérico para nunca duplicar temas.
+#### `v1.5.0` — `organizer-v1.5.0.xpi` *(current stable)*
+- **Project renamed to Organizer:** unified branding across manifest, Settings tab, dialogs, notifications, menus, and `.xpi` filename (`organizer-v1.5.0.xpi`), while keeping the internal add-on ID (`eixos-organizer@danielbarreto.local`) and preference prefix intact for seamless in-place upgrades from `v1.x`.
+- **Full English & Portuguese (PT-BR) support:** new `src/i18n.js` engine and **Language / Idioma** selector at the top of **Settings → Organizer** (`Auto`, `English`, `Português (Brasil)`). Switching language updates the Settings pane live without restarting Zotero and adapts all dialogs, notifications, default root naming (`<Folder> - By Axis & Theme` vs. `<Pasta> - Por Eixo e Tema`), offline topic seeds, and AI output language.
+- **Bilingual documentation:** added complete English [`README.md`](README.md) and Brazilian Portuguese [`README.pt-BR.md`](README.pt-BR.md) with full release traceability.
+- **Clean `dist/` folder:** `build.py` now outputs `dist/organizer-v<version>.xpi` and automatically removes outdated `.xpi` archives from `dist/` (all older releases remain preserved on GitHub Releases).
 
-### `v1.4.0` — `dist/zotero-eixos-organizer-v1.4.0.xpi` *(arquivada)*
-- **Cruzamento IA + Palavras-chave (maior acurácia):** tanto na classificação individual quanto no plano em lote, o motor offline roda primeiro e envia seus candidatos e termos encontrados para a API de IA, que compara sua análise semântica/bibliográfica com o resultado por palavras-chave (confirmando acertos, corrigindo falsos positivos e reconciliando qualquer item omitido pela IA).
-- **Metadados completos do item pai:** o plugin agora resolve automaticamente anexos PDF/notas para o **item pai** e extrai todos os metadados bibliográficos relevantes (`DOI`, `ISBN`, `ISSN`, editora, local, série/coleção, revista/anais, tipo de tese, URL, tags, resumo e nomes de arquivos anexados).
-- **Desempenho otimizado na API:** prompts compactos sem indentação desnecessária, `thinkingConfig` adequado por geração Gemini (`thinkingLevel: "low"` para Gemini 3/4 e `thinkingBudget: 0` para Gemini 2.5, com fallback automático), filtro de blocos de pensamento interno (`thought`), retentativa automática em erros transitórios (429/5xx) e execução paralela de blocos no lote.
-- **Entrega confiável dos pedidos de organização:** retentativa automática (até 3x) quando um item novo ainda está aguardando o Zotero baixar metadados/PDF, deduplicação ajustada (só após sucesso) e notificação clara em caso de item sem correspondência.
-- **Criação manual de índices no próprio plano (desde a 1ª análise):** barra dedicada **Criar índice/eixo manualmente** em `plan-dialog.xhtml`, com botão **+ Atribuir itens** (com busca), cópia/remoção rápida de itens entre eixos e opção de **Reanalisar com IA / Offline** usando os seus índices manuais como alvo.
-- **Janela permanece aberta e verifica a indexação real no Zotero:** ao clicar em **Executar Organização**, a janela exibe progresso ao vivo, consulta diretamente a tabela `collectionItems` do Zotero para confirmar que **cada item do plano foi de fato indexado** na pasta destino (com retentativa automática de pendências) e só fecha quando você clicar em **Concluir e Fechar**.
+#### `v1.4.2` *(archived in GitHub Releases)*
+- Switched `plan-dialog.xhtml` from `modal` to non-modal `openDialog`, fixing the Gecko 140 `saveTx()` deadlock so execution and live verification progress run smoothly while the window stays open.
+- Removed `<select>` controls from inside the scrollable `<ul>` item list (eliminating Gecko chrome text overlap) and added clean single-line ellipsis truncation with full-title tooltips.
+- Renumbered AI-generated new axes sequentially without gaps (`01`, `02`, `03`, …).
 
-### `v1.3.0` — `dist/zotero-eixos-organizer-v1.3.0.xpi` *(arquivada)*
-- **Organização em lote em 1 única tela (`plan-dialog.xhtml`):** ao clicar com o botão direito em qualquer coleção → **Organizar por Eixo e Tema (Ver Plano)…**, o plugin analisa todos os itens pendentes em memória e exibe **um único plano completo** com todos os eixos sugeridos (permitindo marcar/desmarcar, renomear eixos e expandir para ver os itens de cada eixo). Nada é criado nem alterado até você clicar em **Executar Organização**.
-- **Sem precisar criar pasta vazia antes:** se a coleção ainda não tiver subcoleção temática, o plugin cria automaticamente `<Nome da Subcoleção Mãe> - Por Eixo e Tema` (nome editável no plano, ex.: `Minha biblioteca - Por Eixo e Tema`) **dentro dela** ao executar e ativa o monitoramento automático; se já existir uma subcoleção temática (aninhada dentro dela ou irmã no padrão `<Nome> - Por Eixo e Tema`, como `Livros - Por Eixo e Tema`), o plugin parte dela automaticamente.
-- **Detecção automática ampliada:** agora reconhece tanto subcoleções irmãs (`Livros → Livros - Por Eixo e Tema`) quanto subcoleções internas (`Minha biblioteca → Minha biblioteca / Minha biblioteca - Por Eixo e Tema`).
-- **Tempo real automático com notificação (novo padrão):** ao jogar um item novo em uma pasta monitorada (ex.: `Livros`), o plugin já vincula no(s) eixo(s) correspondente(s) e exibe uma notificação clara indicando exatamente em qual pasta e eixo o item foi anexado.
-- **Respeito à organização manual:** se você colocar um item diretamente dentro de um eixo/subcoleção temática, o plugin reconhece que o trabalho já foi feito e não faz nada.
+#### `v1.4.1` *(archived in GitHub Releases)*
+- Added standardized automatic sequential numbering (`01 - Topic`, `02 - Topic`, … and `N.M Subtopic`) across offline mode, AI mode, and manually created plan indices, with prefix-insensitive deduplication.
 
-### `v1.2.0` — `dist/zotero-eixos-organizer-v1.2.0.xpi` *(arquivada)*
-- **Fechar janela (`X` / `Esc`) cancela o lote imediatamente:** corrigido o comportamento da janela interativa em lotes — clicar no **`X`** da janela, pressionar **`Esc`** ou clicar no novo botão **Cancelar Lote** interrompe o processamento imediatamente sem reabrir para os itens seguintes; o botão **Pular** continua pulando apenas o item atual. A janela também passa a exibir o progresso (`Item X de Y`).
-- **Modo Offline inteligente mesmo em pastas destino vazias:** quando a coleção destino ainda não possui subcoleções (ou quando um item não casa com os temas atuais) e a criação de novas pastas está ativada, o motor offline passa a criar/sugerir automaticamente eixos temáticos iniciais (a partir de um vocabulário acadêmico PT/EN/ES e tags do item, reutilizando os eixos criados nos itens seguintes do lote) em vez de pular tudo com `0 vinculados`.
-- **Avisos mais claros em lote:** alerta imediato se a pasta destino estiver vazia com criação de subcoleções desativada, e contagem de novas pastas criadas no resumo final do lote.
+#### `v1.4.0` *(archived in GitHub Releases)*
+- Hybrid AI + keyword cross-checking (offline candidates sent to AI to validate agreements, reject false positives, and reconcile any omitted items).
+- Automatic child-to-parent item resolution (`resolveParentItem`) with full bibliographic metadata (`DOI`, `ISBN`, `ISSN`, publisher, place, series, journal, thesis type, tags, abstract, attachment filenames).
+- Faster Gemini execution via generation-aware `thinkingConfig` (`thinkingLevel: "low"` for Gemini 3/4, `thinkingBudget: 0` for Gemini 2.5), thought-part filtering, compact prompts, parallel chunks, and transient HTTP retries.
+- Reliable real-time delivery with up to 3 automatic retries when Zotero is still fetching PDF metadata.
+- Manual index creation and `+ Assign items` picker directly inside Plan Preview (available from the very first run).
+- Live Zotero database verification (`collectionItems`) inside the plan dialog before closing.
 
-### `v1.1.0` — `dist/zotero-eixos-organizer-v1.1.0.xpi` *(arquivada)*
-- **Compatibilidade real com Zotero 10.0.8:** adicionado `applications.zotero.update_url` obrigatório no `manifest.json` + arquivo `updates.json` (corrigindo o erro de instalação *"Pode ser incompatível com esta versão do Zotero"*).
-- **Registro explícito de `chrome://`:** `bootstrap.js` agora aguarda `Zotero.initializationPromise` e registra `chrome://eixos-organizer/content/` via `amIAddonManagerStartup.registerChrome` (com limpeza no `shutdown`).
-- **Correção completa do painel de Configurações:** corrigido o isolamento de escopo (`Cu.Sandbox`) do Zotero 10 que impedia `EixosPrefsPane.init()` de rodar — listas suspensas de coleções e todos os botões (Detectar Automaticamente, Atualizar Listas, Adicionar Pasta Gerenciada, Testar Conexão com IA, etc.) agora inicializam corretamente.
-- **Melhorias de interface:** feedback de status exibido diretamente na Seção 1, remoção da barra de rolagem horizontal (`preferences.css`) e texto mais claro na Seção 4 explicando que pastas/PDFs já sincronizam nativamente via Zotero/WebDAV e que a seção é opcional apenas para sincronizar regras do plugin.
-- **Autoria e identificador:** autor atualizado para **Daniel Barreto** (`eixos-organizer@danielbarreto.local`, `LICENSE` atualizada).
-- **Builds versionadas:** `build.py` passou a ler a versão de `manifest.json` e gerar `dist/zotero-eixos-organizer-v<versão>.xpi` preservando todas as builds anteriores.
+#### `v1.3.0` *(archived in GitHub Releases)*
+- Replaced one-by-one batch popups with a single-screen Plan Preview (`plan-dialog.xhtml`).
+- Automatic detection/reuse of existing thematic subcollections or automatic creation of `<Parent> - Por Eixo e Tema` inside the source collection without needing a pre-created empty folder.
+- Real-time automatic linking with clear placement notifications as default mode, and respect for items already placed manually inside thematic subcollections.
 
-### `v1.0.0` — `dist/zotero-eixos-organizer-v1.0.0.xpi` *(arquivada)*
-- Lançamento inicial do **Eixos Organizer**: estrutura completa do plugin para Zotero 7–10, motor híbrido (IA Gemini / OpenAI / Ollama + fallback offline TF-IDF), janela interativa de classificação com criação de novos eixos/temas, painel de preferências, menus no Zotero e garantia 100% não-destrutiva.
-- *Nota:* não instalava no Zotero 10.0.8 devido à ausência de `applications.zotero.update_url` no `manifest.json` (corrigido a partir da `v1.1.0`).
+#### `v1.2.0` *(archived in GitHub Releases)*
+- Closing `classify-dialog` with `X`, `Esc`, or **Cancel Batch** immediately aborts the remaining batch instead of skipping to the next item.
+- Offline mode automatically creates initial thematic axes on empty destination folders instead of skipping everything with `0 linked`.
 
----
+#### `v1.1.0` *(archived in GitHub Releases)*
+- Fixed Zotero 10.0.8 installation (`applications.zotero.update_url` + `updates.json` + `amIAddonManagerStartup.registerChrome`).
+- Fixed Zotero 10 `Cu.Sandbox` scope isolation in `preferences.js` so all Preferences buttons and dropdowns initialize properly.
+- Updated authorship to **Daniel Barreto** (`eixos-organizer@danielbarreto.local`).
 
-## Solução de problemas
-
-- **O plugin não aparece após instalar:** confira em *Ferramentas → Plugins* se **Eixos Organizer** está ativado e se sua versão do Zotero está entre `7.0` e `10.*`.
-- **A janela interativa não abriu ao arrastar um item:** verifique em *Editar → Configurações → Eixos Organizer* se a coleção de origem está listada e marcada como ativa, e se o item já não estava vinculado a algum tema da árvore destino (nesse caso, use o clique direito no item → *Eixos Organizer: Classificar por Eixo e Tema…* para forçar a reclassificação).
-- **Erro ao consultar a IA:** clique em *Testar Conexão com IA* nas preferências para ver a mensagem exata do provedor (chave inválida, cota ou endpoint). No modo **Híbrido**, o plugin continua funcionando via fallback offline mesmo se a IA estiver indisponível.
+#### `v1.0.0` *(archived in GitHub Releases)*
+- Initial prototype of `Eixos Organizer` (hybrid AI/offline classifier, interactive dialog, settings pane, menus, and non-destructive linking).
 
 ---
 
-## Licença
+## Troubleshooting
 
-Distribuído sob a licença [MIT](LICENSE).
+- **Plugin does not appear after installation:** check **Tools → Plugins** to verify **Organizer** is enabled and that your Zotero version is between `7.0` and `10.*`.
+- **New item was not auto-organized:** open **Edit → Settings → Organizer** and confirm the source collection is listed and checked as active. If the item was already inside one of the destination axes, right-click the item → **Organizer: Classify by Axis & Theme…** to reclassify manually.
+- **AI connection error:** click **Test AI Connection** in Settings to see the exact error returned by your provider (API key, model ID, quota, or endpoint URL). In **Hybrid** mode, Organizer automatically falls back to Offline mode whenever the AI is unreachable.
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE) — © 2026 Daniel Barreto.

@@ -1,4 +1,4 @@
-/* global Zotero, document, window */
+/* global Zotero, ChromeUtils, document, window */
 
 var EixosPrefsPane = (function () {
   let collectionsCache = [];
@@ -7,6 +7,14 @@ var EixosPrefsPane = (function () {
 
   function api() {
     return Zotero.EixosOrganizer;
+  }
+
+  function t(key, params) {
+    const a = api();
+    if (a && a.i18n && typeof a.i18n.t === "function") {
+      return a.i18n.t(key, params);
+    }
+    return key;
   }
 
   function $(id) {
@@ -18,6 +26,24 @@ var EixosPrefsPane = (function () {
     if (!el) return;
     el.textContent = msg || "";
     el.className = "eixos-status" + (isError ? " eixos-error" : msg ? " eixos-ok" : "");
+  }
+
+  function applyLanguage() {
+    const root = $("eixos-organizer-prefpane") || document;
+    const textNodes = root.querySelectorAll("[data-i18n]");
+    for (const el of textNodes) {
+      const key = el.getAttribute("data-i18n");
+      if (key) {
+        el.textContent = t(key);
+      }
+    }
+    const phNodes = root.querySelectorAll("[data-i18n-placeholder]");
+    for (const el of phNodes) {
+      const key = el.getAttribute("data-i18n-placeholder");
+      if (key) {
+        el.setAttribute("placeholder", t(key));
+      }
+    }
   }
 
   function pathForKey(key) {
@@ -38,7 +64,7 @@ var EixosPrefsPane = (function () {
 
     const autoOpt = document.createElementNS("http://www.w3.org/1999/xhtml", "option");
     autoOpt.value = "__AUTO__";
-    autoOpt.textContent = 'Automático: usar existente ou criar "<Pasta> - Por Eixo e Tema" dentro da pasta';
+    autoOpt.textContent = t("prefTargetAuto");
     tgtSel.appendChild(autoOpt);
 
     for (const c of collectionsCache) {
@@ -71,8 +97,7 @@ var EixosPrefsPane = (function () {
     if (rulesState.length === 0) {
       const empty = document.createElementNS("http://www.w3.org/1999/xhtml", "div");
       empty.className = "eixos-empty";
-      empty.textContent =
-        "Nenhuma pasta gerenciada ainda. Clique em 'Detectar Automaticamente' ou adicione uma regra abaixo.";
+      empty.textContent = t("prefRulesEmpty");
       container.appendChild(empty);
       return;
     }
@@ -88,7 +113,7 @@ var EixosPrefsPane = (function () {
       const toggle = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
       toggle.type = "checkbox";
       toggle.checked = rule.enabled !== false;
-      toggle.title = "Ativar/desativar monitoramento desta pasta";
+      toggle.title = t("prefRuleToggleTitle");
       toggle.addEventListener("change", () => {
         rulesState[i].enabled = toggle.checked;
         persistRules();
@@ -103,8 +128,8 @@ var EixosPrefsPane = (function () {
       const line2 = document.createElementNS("http://www.w3.org/1999/xhtml", "div");
       line2.className = "eixos-rule-meta";
       line2.textContent = rule.allowCreateNew
-        ? "Permite criar novos temas quando necessário"
-        : "Usa apenas temas já existentes";
+        ? t("prefRuleAllowNew")
+        : t("prefRuleExistingOnly");
 
       textWrap.appendChild(line1);
       textWrap.appendChild(line2);
@@ -117,7 +142,7 @@ var EixosPrefsPane = (function () {
       const runBtn = document.createElementNS("http://www.w3.org/1999/xhtml", "button");
       runBtn.type = "button";
       runBtn.className = "eixos-btn";
-      runBtn.textContent = "Organizar / Ver Plano…";
+      runBtn.textContent = t("prefBtnOpenPlan");
       runBtn.addEventListener("click", async () => {
         const col = Zotero.Collections.getByLibraryAndKey(
           rule.libraryID || Zotero.Libraries.userLibraryID,
@@ -131,8 +156,8 @@ var EixosPrefsPane = (function () {
       const delBtn = document.createElementNS("http://www.w3.org/1999/xhtml", "button");
       delBtn.type = "button";
       delBtn.className = "eixos-btn eixos-btn-danger";
-      delBtn.textContent = "Remover Regra";
-      delBtn.title = "Remove apenas a regra do plugin (não apaga nenhuma pasta nem livro no Zotero)";
+      delBtn.textContent = t("prefBtnRemoveRule");
+      delBtn.title = t("prefBtnRemoveRuleTitle");
       delBtn.addEventListener("click", () => {
         rulesState.splice(i, 1);
         persistRules();
@@ -156,15 +181,16 @@ var EixosPrefsPane = (function () {
     if (s.syncConfigInLibrary) {
       try {
         await api().config.saveRulesToSyncNote(clean);
-        setStatus("eixos-rules-status", "Regras salvas e sincronizadas na biblioteca.");
-        setStatus("eixos-global-status", "Regras salvas e sincronizadas na biblioteca.");
+        setStatus("eixos-rules-status", t("statusSavedSynced"));
+        setStatus("eixos-global-status", t("statusSavedSynced"));
       } catch (e) {
-        setStatus("eixos-rules-status", "Salvo localmente (erro ao sincronizar nota: " + e.message + ")", true);
-        setStatus("eixos-global-status", "Salvo localmente (erro ao sincronizar nota: " + e.message + ")", true);
+        const msg = t("statusSavedLocalErr", { err: e.message || e });
+        setStatus("eixos-rules-status", msg, true);
+        setStatus("eixos-global-status", msg, true);
       }
     } else {
-      setStatus("eixos-rules-status", "Regras salvas localmente.");
-      setStatus("eixos-global-status", "Regras salvas localmente.");
+      setStatus("eixos-rules-status", t("statusSavedLocal"));
+      setStatus("eixos-global-status", t("statusSavedLocal"));
     }
   }
 
@@ -178,6 +204,7 @@ var EixosPrefsPane = (function () {
 
   function saveFormFields() {
     const partial = {
+      language: $("eixos-language") ? $("eixos-language").value : "auto",
       mode: $("eixos-mode").value,
       maxTargets: Math.max(1, Math.min(8, Number($("eixos-max-targets").value) || 3)),
       allowCreateNew: $("eixos-allow-create").checked,
@@ -195,6 +222,9 @@ var EixosPrefsPane = (function () {
   function loadFormFields() {
     const s = api().config.getSettings();
     rulesState = s.rules.slice();
+    if ($("eixos-language")) {
+      $("eixos-language").value = s.language || "auto";
+    }
     $("eixos-mode").value = s.mode;
     $("eixos-max-targets").value = String(s.maxTargets);
     $("eixos-allow-create").checked = s.allowCreateNew;
@@ -212,6 +242,17 @@ var EixosPrefsPane = (function () {
     if (eventsBound) return;
     eventsBound = true;
 
+    const langEl = $("eixos-language");
+    if (langEl) {
+      langEl.addEventListener("change", () => {
+        saveFormFields();
+        applyLanguage();
+        populateCollectionSelects();
+        renderRules();
+        setStatus("eixos-global-status", t("statusSaved"));
+      });
+    }
+
     const autoSaveIds = [
       "eixos-mode",
       "eixos-max-targets",
@@ -228,7 +269,7 @@ var EixosPrefsPane = (function () {
       if (el) {
         el.addEventListener("change", () => {
           saveFormFields();
-          setStatus("eixos-global-status", "Configurações salvas.");
+          setStatus("eixos-global-status", t("statusSaved"));
         });
       }
     }
@@ -244,26 +285,26 @@ var EixosPrefsPane = (function () {
       collectionsCache = await api().organizer.listAllCollections();
       populateCollectionSelects();
       renderRules();
-      setStatus("eixos-rules-status", `Lista atualizada (${collectionsCache.length} coleções).`);
+      setStatus("eixos-rules-status", t("statusColsUpdated", { count: collectionsCache.length }));
     });
 
     $("eixos-btn-autodiscover").addEventListener("click", async () => {
       const discovered = await api().config.autoDiscoverRules();
       if (discovered.length === 0) {
-        setStatus("eixos-rules-status", "Nenhum par '<Pasta> → <Pasta> - Por Eixo e Tema' encontrado.", true);
+        setStatus("eixos-rules-status", t("statusNoPairsFound"), true);
         return;
       }
       rulesState = api().config.normalizeRules(rulesState.concat(discovered));
       await persistRules();
       renderRules();
-      setStatus("eixos-rules-status", `${discovered.length} par(es) detectado(s) automaticamente!`);
+      setStatus("eixos-rules-status", t("statusPairsFound", { count: discovered.length }));
     });
 
     $("eixos-btn-add-rule").addEventListener("click", async () => {
       const sourceKey = $("eixos-new-source").value;
       let targetRootKey = $("eixos-new-target").value;
       if (!sourceKey) {
-        setStatus("eixos-rules-status", "Selecione uma pasta de origem.", true);
+        setStatus("eixos-rules-status", t("statusSelectSource"), true);
         return;
       }
 
@@ -283,20 +324,24 @@ var EixosPrefsPane = (function () {
             populateCollectionSelects(sourceKey);
           }
         } catch (err) {
-          setStatus("eixos-rules-status", "Erro ao preparar subcoleção destino: " + (err.message || err), true);
+          setStatus(
+            "eixos-rules-status",
+            t("statusTargetPrepErr", { err: err.message || err }),
+            true
+          );
           return;
         }
       }
 
       if (sourceKey === targetRootKey) {
-        setStatus("eixos-rules-status", "A pasta de origem e a pasta destino devem ser diferentes.", true);
+        setStatus("eixos-rules-status", t("statusSameFolder"), true);
         return;
       }
       const already = rulesState.some(
         (r) => r.sourceKey === sourceKey && r.targetRootKey === targetRootKey
       );
       if (already) {
-        setStatus("eixos-rules-status", "Essa regra de pasta já está cadastrada.", true);
+        setStatus("eixos-rules-status", t("statusDuplicateRule"), true);
         return;
       }
       rulesState.push({
@@ -315,12 +360,15 @@ var EixosPrefsPane = (function () {
     $("eixos-btn-test-ai").addEventListener("click", async () => {
       saveFormFields();
       const s = api().config.getSettings();
-      setStatus("eixos-ai-status", "Testando conexão…");
+      setStatus("eixos-ai-status", t("statusTestingAI"));
       try {
         await api().classifier.testAIConnection(s);
-        setStatus("eixos-ai-status", `Conexão OK (${s.aiProvider} / ${s.aiModel})!`);
+        setStatus(
+          "eixos-ai-status",
+          t("statusAIOk", { provider: s.aiProvider, model: s.aiModel })
+        );
       } catch (err) {
-        setStatus("eixos-ai-status", "Falha: " + (err.message || err), true);
+        setStatus("eixos-ai-status", t("statusAIFail", { err: err.message || err }), true);
       }
     });
 
@@ -335,67 +383,96 @@ var EixosPrefsPane = (function () {
         if (payload && payload.rules) {
           rulesState = payload.rules;
           renderRules();
-          setStatus("eixos-global-status", `Carregado da biblioteca (${rulesState.length} regra(s)).`);
+          setStatus(
+            "eixos-global-status",
+            t("statusLoadedFromLib", { count: rulesState.length })
+          );
         } else {
-          setStatus("eixos-global-status", "Nenhuma nota de configuração sincronizada encontrada na biblioteca.", true);
+          setStatus("eixos-global-status", t("statusNoSyncNote"), true);
         }
       } catch (err) {
-        setStatus("eixos-global-status", "Erro ao carregar: " + (err.message || err), true);
+        setStatus(
+          "eixos-global-status",
+          t("statusLoadErr", { err: err.message || err }),
+          true
+        );
       }
     });
 
     $("eixos-btn-export").addEventListener("click", async () => {
       try {
-        const { FilePicker } = ChromeUtils.importESModule("chrome://zotero/content/modules/filePicker.mjs");
+        const { FilePicker } = ChromeUtils.importESModule(
+          "chrome://zotero/content/modules/filePicker.mjs"
+        );
         const fp = new FilePicker();
-        fp.init(window, "Exportar configuração Eixos Organizer", fp.modeSave);
-        fp.defaultString = "eixos-organizer-config.json";
+        fp.init(window, t("filePickerExportTitle"), fp.modeSave);
+        fp.defaultString = "organizer-config.json";
         fp.appendFilter("JSON", "*.json");
         const rv = await fp.show();
         if (rv === fp.returnOK || rv === fp.returnReplace) {
           await Zotero.File.putContentsAsync(fp.file, api().config.exportConfigJSON());
-          setStatus("eixos-global-status", "Configuração exportada com sucesso (sem chaves de API).");
+          setStatus("eixos-global-status", t("statusExportOk"));
         }
       } catch (err) {
-        setStatus("eixos-global-status", "Erro ao exportar: " + (err.message || err), true);
+        setStatus(
+          "eixos-global-status",
+          t("statusExportErr", { err: err.message || err }),
+          true
+        );
       }
     });
 
     $("eixos-btn-import").addEventListener("click", async () => {
       try {
-        const { FilePicker } = ChromeUtils.importESModule("chrome://zotero/content/modules/filePicker.mjs");
+        const { FilePicker } = ChromeUtils.importESModule(
+          "chrome://zotero/content/modules/filePicker.mjs"
+        );
         const fp = new FilePicker();
-        fp.init(window, "Importar configuração Eixos Organizer", fp.modeOpen);
+        fp.init(window, t("filePickerImportTitle"), fp.modeOpen);
         fp.appendFilter("JSON", "*.json");
         const rv = await fp.show();
         if (rv === fp.returnOK) {
           const text = await Zotero.File.getContentsAsync(fp.file);
           await api().config.importConfigJSON(text);
           loadFormFields();
+          applyLanguage();
+          populateCollectionSelects();
           renderRules();
-          setStatus("eixos-global-status", `Configuração importada (${rulesState.length} regra(s))!`);
+          setStatus(
+            "eixos-global-status",
+            t("statusImportOk", { count: rulesState.length })
+          );
         }
       } catch (err) {
-        setStatus("eixos-global-status", "Erro ao importar: " + (err.message || err), true);
+        setStatus(
+          "eixos-global-status",
+          t("statusImportErr", { err: err.message || err }),
+          true
+        );
       }
     });
   }
 
   async function init() {
     if (!api()) {
-      setStatus("eixos-rules-status", "API do Eixos Organizer indisponível. Reative o plugin.", true);
+      setStatus("eixos-rules-status", "Organizer API unavailable. Please re-enable the plugin.", true);
       return;
     }
     try {
       bindEvents();
       collectionsCache = await api().organizer.listAllCollections();
       loadFormFields();
+      applyLanguage();
       const pendingSource = api().consumePendingSourceKey();
       populateCollectionSelects(pendingSource);
       renderRules();
     } catch (err) {
       Zotero.debug("EixosPrefsPane.init error: " + err);
-      setStatus("eixos-rules-status", "Erro ao carregar painel: " + (err.message || err), true);
+      setStatus(
+        "eixos-rules-status",
+        t("statusInitErr", { err: err.message || err }),
+        true
+      );
     }
   }
 

@@ -4,6 +4,23 @@
   const args = window.arguments && window.arguments[0];
   if (!args) return;
 
+  function t(key, params) {
+    if (args.i18n && typeof args.i18n.t === "function") {
+      return args.i18n.t(key, params);
+    }
+    try {
+      const openerI18n =
+        window.opener &&
+        window.opener.Zotero &&
+        window.opener.Zotero.EixosOrganizer &&
+        window.opener.Zotero.EixosOrganizer.i18n;
+      if (openerI18n && typeof openerI18n.t === "function") {
+        return openerI18n.t(key, params);
+      }
+    } catch (e) {}
+    return key;
+  }
+
   let groupsState = [];
   const expandedGroups = new Set();
   const pickerOpenGroups = new Set();
@@ -28,6 +45,22 @@
     return groupsState
       .filter((g) => g.isManual && g.name.trim())
       .map((g) => g.name.trim());
+  }
+
+  function applyStaticStrings() {
+    document.title = t("planWindowTitle");
+    $("plan-subtitle").textContent = t("planSubtitle");
+    $("plan-btn-re-ai").textContent = t("planBtnReAI");
+    $("plan-btn-re-off").textContent = t("planBtnReOffline");
+    $("plan-manual-label").textContent = t("planManualLabel");
+    $("plan-manual-input").placeholder = t("planManualPlaceholder");
+    $("plan-btn-add-manual").textContent = t("planBtnAddManual");
+    $("plan-search").placeholder = t("planSearchPlaceholder");
+    $("plan-btn-select-all").textContent = t("planBtnSelectAll");
+    $("plan-btn-unselect-all").textContent = t("planBtnUnselectAll");
+    $("plan-btn-retry-missing").textContent = t("planBtnRetryMissing");
+    $("plan-btn-cancel").textContent = t("planBtnCancel");
+    $("plan-btn-execute").textContent = t("planBtnExecute");
   }
 
   function applyPlan(plan) {
@@ -56,10 +89,10 @@
     const badge = $("plan-engine-badge");
     const eng = (plan && plan.engineUsed) || "offline";
     if (eng.startsWith("ai:")) {
-      badge.textContent = "IA + Palavras-chave (" + eng.slice(3) + ")";
+      badge.textContent = t("planBadgeAI", { provider: eng.slice(3) });
       badge.className = "plan-badge plan-badge-ai";
     } else {
-      badge.textContent = "Modo Offline";
+      badge.textContent = t("planBadgeOffline");
       badge.className = "plan-badge plan-badge-offline";
     }
     $("plan-reason").textContent = (plan && plan.reason) || "";
@@ -86,32 +119,32 @@
       }
     }
 
-    const parts = [
-      `${activeGroups.length} eixo(s)`,
-      `${uniqueItemIds.size} item(ns) único(s) (${totalLinks} vínculo(s))`,
-    ];
-    if (newFolders > 0) {
-      parts.push(`${newFolders} nova(s) pasta(s)`);
-    }
+    const newPart =
+      newFolders > 0 ? t("planSummaryNewPart", { count: newFolders }) : "";
 
     $("plan-summary").textContent =
       activeGroups.length > 0
-        ? parts.join(" • ") + " — nada será apagado"
-        : "Nenhum eixo selecionado";
+        ? t("planSummaryFmt", {
+            axes: activeGroups.length,
+            items: uniqueItemIds.size,
+            links: totalLinks,
+            newPart,
+          })
+        : t("planSummaryNone");
 
     const btn = $("plan-btn-execute");
     if (executionFinished) {
       btn.disabled = false;
-      btn.textContent = "Concluir e Fechar";
+      btn.textContent = t("planBtnDoneClose");
     } else if (isExecuting) {
       btn.disabled = true;
-      btn.textContent = "Executando e verificando…";
+      btn.textContent = t("planBtnExecuting");
     } else {
       btn.disabled = activeGroups.length === 0;
       btn.textContent =
         uniqueItemIds.size > 0
-          ? `Executar Organização (${uniqueItemIds.size} itens)`
-          : "Executar Organização";
+          ? t("planBtnExecuteCount", { count: uniqueItemIds.size })
+          : t("planBtnExecute");
     }
   }
 
@@ -191,8 +224,7 @@
     if (groupsState.length === 0) {
       const empty = document.createElement("div");
       empty.className = "plan-empty";
-      empty.textContent =
-        "Nenhum eixo ainda. Use a caixa acima para criar um índice manualmente ou clique em Reanalisar.";
+      empty.textContent = t("planEmptyGroups");
       container.appendChild(empty);
       return;
     }
@@ -229,13 +261,13 @@
       const tag = document.createElement("span");
       if (g.isManual) {
         tag.className = "plan-badge plan-badge-manual";
-        tag.textContent = "Manual";
+        tag.textContent = t("planBadgeManual");
       } else if (g.isNew) {
         tag.className = "plan-badge plan-badge-new";
-        tag.textContent = "Nova pasta";
+        tag.textContent = t("planBadgeNewFolder");
       } else {
         tag.className = "plan-badge plan-badge-exist";
-        tag.textContent = "Existente";
+        tag.textContent = t("planBadgeExisting");
       }
       left.appendChild(tag);
 
@@ -245,7 +277,7 @@
         nameInput.className = "plan-group-name-input";
         nameInput.value = g.name;
         nameInput.disabled = isExecuting || executionFinished;
-        nameInput.title = "Você pode renomear este eixo antes de executar";
+        nameInput.title = t("planAxisNameTitle");
         nameInput.addEventListener("input", () => {
           g.name = nameInput.value;
           updateSummary();
@@ -263,14 +295,16 @@
 
       const cnt = document.createElement("span");
       cnt.className = "plan-count";
-      cnt.textContent = `${g.items.length} item(ns)`;
+      cnt.textContent = t("planItemCount", { count: g.items.length });
       right.appendChild(cnt);
 
       if (!isExecuting && !executionFinished && allItems.length > 0) {
         const assignBtn = document.createElement("button");
         assignBtn.type = "button";
         assignBtn.className = "plan-btn plan-btn-sm";
-        assignBtn.textContent = pickerOpenGroups.has(g.id) ? "Fechar seleção" : "+ Atribuir itens";
+        assignBtn.textContent = pickerOpenGroups.has(g.id)
+          ? t("planBtnCloseAssign")
+          : t("planBtnAssign");
         assignBtn.addEventListener("click", () => {
           if (pickerOpenGroups.has(g.id)) pickerOpenGroups.delete(g.id);
           else pickerOpenGroups.add(g.id);
@@ -283,7 +317,7 @@
       const toggleBtn = document.createElement("button");
       toggleBtn.type = "button";
       toggleBtn.className = "plan-btn plan-btn-sm";
-      toggleBtn.textContent = isExpanded ? "Ocultar ▴" : "Ver itens ▾";
+      toggleBtn.textContent = isExpanded ? t("planBtnHideItems") : t("planBtnViewItems");
       toggleBtn.addEventListener("click", () => {
         if (expandedGroups.has(g.id)) expandedGroups.delete(g.id);
         else expandedGroups.add(g.id);
@@ -295,7 +329,6 @@
       head.appendChild(right);
       card.appendChild(head);
 
-      // Item assignment picker for manual/custom editing
       if (pickerOpenGroups.has(g.id) && !isExecuting && !executionFinished) {
         const pickerWrap = document.createElement("div");
         pickerWrap.className = "plan-picker-wrap";
@@ -303,7 +336,7 @@
         const pickerSearch = document.createElement("input");
         pickerSearch.type = "search";
         pickerSearch.className = "plan-picker-search";
-        pickerSearch.placeholder = "Buscar livros/artigos para atribuir a este índice…";
+        pickerSearch.placeholder = t("planPickerPlaceholder");
         pickerWrap.appendChild(pickerSearch);
 
         const pickerList = document.createElement("div");
@@ -328,7 +361,7 @@
             icb.addEventListener("change", () => {
               if (icb.checked) addItemToGroup(g, it);
               else removeItemFromGroup(g, it.id);
-              cnt.textContent = `${g.items.length} item(ns)`;
+              cnt.textContent = t("planItemCount", { count: g.items.length });
               updateSummary();
             });
             const sp = document.createElement("span");
@@ -357,9 +390,7 @@
         if (visibleItems.length === 0) {
           const li = document.createElement("li");
           li.className = "plan-item-empty";
-          li.textContent = g.isManual
-            ? 'Índice manual vazio — clique em "+ Atribuir itens" ou "Reanalisar" para preencher, ou execute assim para criar a pasta pronta.'
-            : "Nenhum item neste eixo.";
+          li.textContent = g.isManual ? t("planManualEmptyHint") : t("planAxisEmptyHint");
           list.appendChild(li);
         } else {
           for (const it of visibleItems) {
@@ -381,7 +412,7 @@
               rmBtn.type = "button";
               rmBtn.className = "plan-item-rm";
               rmBtn.textContent = "×";
-              rmBtn.title = "Retirar deste eixo no plano (use '+ Atribuir itens' em outro eixo para incluir lá)";
+              rmBtn.title = t("planItemRmTitle");
               rmBtn.addEventListener("click", () => {
                 removeItemFromGroup(g, it.id);
                 renderGroups($("plan-search").value);
@@ -408,9 +439,7 @@
     btnOff.disabled = true;
     $("plan-btn-execute").disabled = true;
     $("plan-reason").textContent =
-      forceEngine === "ai"
-        ? "Analisando coleção com IA + cruzamento por palavras-chave… aguarde."
-        : "Recalculando plano offline…";
+      forceEngine === "ai" ? t("planReanalyzingAI") : t("planReanalyzingOff");
 
     try {
       const manualNames = getManualAxisNames();
@@ -421,7 +450,7 @@
       renderGroups($("plan-search").value);
       updateSummary();
     } catch (err) {
-      $("plan-reason").textContent = "Erro ao reanalisar: " + (err.message || err);
+      $("plan-reason").textContent = t("planReanalyzeErr", { err: err.message || err });
     } finally {
       btnAI.disabled = false;
       btnOff.disabled = false;
@@ -441,7 +470,7 @@
     const newRootName =
       $("plan-dest-input").value.trim() ||
       args.defaultNewRootName ||
-      `${args.sourceName} - Por Eixo e Tema`;
+      `${args.sourceName} - ${t("defaultRootSuffix")}`;
     return {
       newRootName,
       groups: selectedGroups,
@@ -470,7 +499,7 @@
     retryBtn.style.display = "none";
     execDetails.textContent = "";
     progressBar.style.width = "10%";
-    execStatus.textContent = "Iniciando criação de pastas e indexação no Zotero…";
+    execStatus.textContent = t("planExecStart");
 
     $("plan-btn-cancel").disabled = true;
     $("plan-btn-re-ai").disabled = true;
@@ -496,12 +525,19 @@
 
       if (v && v.missing && v.missing.length > 0) {
         execBox.className = "plan-exec-box plan-exec-warn";
-        execStatus.textContent = `Atenção: ${v.verifiedItems}/${v.totalPlannedItems} itens verificados (${v.missing.length} com pendência na verificação).`;
-        const lines = v.missing
-          .slice(0, 8)
-          .map((m) => `• ${m.title} — faltou em: ${m.missingColNames.join(", ")}`);
+        execStatus.textContent = t("planExecWarn", {
+          verified: v.verifiedItems,
+          total: v.totalPlannedItems,
+          missing: v.missing.length,
+        });
+        const lines = v.missing.slice(0, 8).map((m) =>
+          t("planExecMissingLine", {
+            title: m.title,
+            cols: m.missingColNames.join(", "),
+          })
+        );
         if (v.missing.length > 8) {
-          lines.push(`… e mais ${v.missing.length - 8} item(ns).`);
+          lines.push(t("planExecMoreMissing", { count: v.missing.length - 8 }));
         }
         execDetails.textContent = lines.join("\n");
         lastFailedRetryPayload = payload;
@@ -513,19 +549,26 @@
         execBox.className = "plan-exec-box plan-exec-ok";
         const createdPart =
           report.createdAxisNames && report.createdAxisNames.length > 0
-            ? `${report.createdAxisNames.length} pasta(s) criada(s)`
-            : "pastas existentes reutilizadas";
-        execStatus.textContent = `Verificado no Zotero: ${v.verifiedItems}/${v.totalPlannedItems} item(ns) confirmados nas subcoleções do plano!`;
-        execDetails.textContent =
-          `Destino: ${report.targetRootName} • ${v.verifiedLinks}/${v.totalPlannedLinks} vínculos reais confirmados no banco do Zotero • ${createdPart} • Monitoramento automático ativado.`;
+            ? t("planExecCreatedPart", { count: report.createdAxisNames.length })
+            : t("planExecReusedPart");
+        execStatus.textContent = t("planExecOk", {
+          verified: v.verifiedItems,
+          total: v.totalPlannedItems,
+        });
+        execDetails.textContent = t("planExecDetailsOk", {
+          dest: report.targetRootName,
+          vLinks: v.verifiedLinks,
+          tLinks: v.totalPlannedLinks,
+          created: createdPart,
+        });
         isExecuting = false;
         executionFinished = true;
         args.result = { confirmed: true, executedInDialog: true, report };
       }
     } catch (err) {
       execBox.className = "plan-exec-box plan-exec-error";
-      execStatus.textContent = "Erro durante a execução: " + (err.message || err);
-      execDetails.textContent = "Nenhum item ou pasta foi apagado. Você pode tentar executar novamente.";
+      execStatus.textContent = t("planExecErr", { err: err.message || err });
+      execDetails.textContent = t("planExecErrSafe");
       isExecuting = false;
       executionFinished = false;
       $("plan-btn-cancel").disabled = false;
@@ -542,25 +585,30 @@
   }
 
   function init() {
-    $("plan-title").textContent = `Organizar “${args.sourceName}” (${args.totalPending} pendente(s))`;
+    applyStaticStrings();
+
+    $("plan-title").textContent = t("planTitleFmt", {
+      source: args.sourceName,
+      count: args.totalPending,
+    });
 
     if (args.existingTarget) {
-      $("plan-dest-label").textContent = "Usando subcoleção temática já existente:";
+      $("plan-dest-label").textContent = t("planDestExistingLabel");
       const ex = $("plan-dest-existing");
       ex.style.display = "inline";
       ex.textContent = args.existingTarget.path || args.existingTarget.name;
       $("plan-dest-input").style.display = "none";
       const b = $("plan-dest-badge");
-      b.textContent = "Existente";
+      b.textContent = t("planBadgeExisting");
       b.className = "plan-badge plan-badge-exist";
     } else {
-      $("plan-dest-label").textContent = `Criar subcoleção dentro de “${args.sourceName}”:`;
+      $("plan-dest-label").textContent = t("planDestNewLabel", { source: args.sourceName });
       $("plan-dest-existing").style.display = "none";
       const inp = $("plan-dest-input");
       inp.style.display = "inline-block";
-      inp.value = args.defaultNewRootName || `${args.sourceName} - Por Eixo e Tema`;
+      inp.value = args.defaultNewRootName || `${args.sourceName} - ${t("defaultRootSuffix")}`;
       const b = $("plan-dest-badge");
-      b.textContent = "Nova subcoleção";
+      b.textContent = t("planBadgeNewSub");
       b.className = "plan-badge plan-badge-new";
     }
 

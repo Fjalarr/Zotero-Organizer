@@ -7,11 +7,12 @@ var EixosConfig = (function () {
   const CONFIG_SCHEMA_VERSION = 1;
 
   const DEFAULTS = {
-    mode: "auto", // "auto" (automático com notificação) | "interactive" (perguntar antes)
+    language: "auto", // "auto" | "pt-BR" | "en-US"
+    mode: "auto", // "auto" | "interactive"
     engine: "hybrid", // "hybrid" | "ai" | "offline"
     aiProvider: "gemini", // "gemini" | "openai" | "custom"
     aiApiKey: "",
-    aiModel: "gemini-2.5-flash",
+    aiModel: "gemini-3.5-flash",
     aiEndpoint: "http://localhost:11434/v1/chat/completions",
     allowCreateNew: true,
     maxTargets: 3,
@@ -45,6 +46,7 @@ var EixosConfig = (function () {
       rules = [];
     }
     return {
+      language: getPref("language") || "auto",
       mode: getPref("mode") || "auto",
       engine: getPref("engine") || "hybrid",
       aiProvider: getPref("aiProvider") || "gemini",
@@ -61,6 +63,7 @@ var EixosConfig = (function () {
 
   function saveLocalSettings(partial) {
     const allowed = [
+      "language",
       "mode",
       "engine",
       "aiProvider",
@@ -241,10 +244,12 @@ var EixosConfig = (function () {
 
     const discovered = [];
 
-    // 1. Sibling pattern: "<Name>" -> "<Name> - Por Eixo e Tema"
+    // 1. Sibling pattern: "<Name>" -> "<Name> - Por Eixo e Tema" or "<Name> - By Axis & Theme"
     for (const siblings of byParent.values()) {
       for (const target of siblings) {
-        const match = target.collectionName.match(/^(.+?)\s*-\s*Por Eixo e Tema$/i);
+        const match = target.collectionName.match(
+          /^(.+?)\s*-\s*(?:Por Eixo e Tema|By Axis\s*(?:&|and)\s*Theme)$/i
+        );
         if (!match) continue;
         const baseName = norm(match[1]);
         const source = siblings.find(
@@ -264,7 +269,7 @@ var EixosConfig = (function () {
       }
     }
 
-    // 2. Nested child pattern: "<Source>" -> "<Source> / Por Eixo e Tema" (or "<Source> - Por Eixo e Tema")
+    // 2. Nested child pattern: "<Source>" -> "<Source> / <Source> - Por Eixo e Tema" / "By Axis & Theme"
     for (const r of rows) {
       if (!r.parentCollectionID || !byID.has(r.parentCollectionID)) continue;
       const parent = byID.get(r.parentCollectionID);
@@ -273,7 +278,11 @@ var EixosConfig = (function () {
       if (
         rn === "por eixo e tema" ||
         rn === "por eixos e temas" ||
-        rn === `${pn} - por eixo e tema`
+        rn === "by axis & theme" ||
+        rn === "by axis and theme" ||
+        rn === `${pn} - por eixo e tema` ||
+        rn === `${pn} - by axis & theme` ||
+        rn === `${pn} - by axis and theme`
       ) {
         discovered.push({
           id: `rule_${parent.key}_${r.key}`,
@@ -330,6 +339,7 @@ var EixosConfig = (function () {
       {
         schemaVersion: CONFIG_SCHEMA_VERSION,
         exportedAt: new Date().toISOString(),
+        language: s.language,
         mode: s.mode,
         engine: s.engine,
         aiProvider: s.aiProvider,
@@ -353,6 +363,7 @@ var EixosConfig = (function () {
     const rules = normalizeRules(parsed.rules || []);
     const update = { rules };
     for (const k of [
+      "language",
       "mode",
       "engine",
       "aiProvider",
@@ -390,7 +401,7 @@ var EixosConfig = (function () {
   function getDefaultModelForProvider(provider) {
     if (provider === "openai") return "gpt-4o-mini";
     if (provider === "custom") return "llama3.1";
-    return "gemini-2.5-flash";
+    return "gemini-3.5-flash";
   }
 
   return {
