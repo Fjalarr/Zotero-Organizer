@@ -6,7 +6,7 @@
 
 # Organizer — Zotero Plugin (Zotero 7 / 8 / 10)
 
-> **v1.5.1 — Stable Public Release (Encrypted Local API Key Vault)**
+> **v1.6.0 — Stable Public Release (Fine-Grained 2-Level Axis → Subtheme Filtering)**
 
 A **100% non-destructive** Zotero plugin that automatically organizes books, articles, theses, and PDFs into **numbered thematic subcollections by Axis & Theme** — powered by a **Hybrid Engine (AI + local keyword cross-check + offline fallback)**, a **single-screen interactive Plan Preview with live Zotero database verification**, **full English / Portuguese (PT-BR) language switching**, and optional **team rule sync via Zotero Sync / WebDAV**.
 
@@ -34,7 +34,7 @@ A **100% non-destructive** Zotero plugin that automatically organizes books, art
 
 When you maintain general collections in Zotero (such as `Books`, `Articles & Theses`, or `My Library`), **Organizer** builds and maintains a parallel thematic tree (`<Collection> - By Axis & Theme` in English or `<Coleção> - Por Eixo e Tema` in Portuguese) automatically:
 
-1. **Single-Screen Batch Plan Preview:** right-click any collection → **Organizer: Organize by Axis & Theme (Preview Plan)…**. Organizer analyzes all pending items in memory and shows one unified plan with numbered axes (`01 - Topic`, `02 - Topic`, …). You can rename axes, check/uncheck groups, **create manual indices**, assign or remove items, and re-analyze with AI or Offline before touching anything in Zotero.
+1. **Single-Screen 2-Level Batch Plan Preview:** right-click any collection → **Organizer: Organize by Axis & Theme (Preview Plan)…**. Organizer analyzes all pending items in memory and builds a **2-level hierarchy** of numbered axes (`01 - Gender, Feminism & Sexual Violence`) and fine-grained numbered subthemes (`1.1 Feminist Theory`, `1.2 Sexual Violence in Armed Conflicts`, …) whenever an axis has enough items (configurable threshold, default `4`). You can rename axes or subthemes, toggle groups, **create manual axes or `+ Subtheme` folders**, assign/remove items, and re-analyze with AI or Offline before touching anything in Zotero.
 2. **Verified Live Execution:** when you click **Run Organization**, the plan window stays open with live progress, creates/reuses the thematic subcollection and axes, links every item, and **queries Zotero's database (`collectionItems`) to verify every single link** (retrying any pending link automatically) before enabling **Done & Close**.
 3. **Automatic Subcollection Creation or Reuse:** no need to manually create an empty folder first. If a thematic subcollection already exists (either nested inside the collection or as a sibling `<Name> - By Axis & Theme` / `<Nome> - Por Eixo e Tema`), Organizer starts from it automatically; otherwise it creates `<Parent> - By Axis & Theme` inside the collection on execution.
 4. **Real-Time Auto-Organization + Notifications:** once a collection is managed, dragging or saving any new book, article, thesis, or PDF into it automatically resolves the parent item's full metadata, links it to the best matching axis/axes, and displays a notification showing exactly where it was placed.
@@ -56,10 +56,10 @@ When you maintain general collections in Zotero (such as `Books`, `Articles & Th
 
 Compatible with **Zotero 7, 8, and 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Download **`organizer-v1.5.1.xpi`** from [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases/latest) or from [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
+1. Download **`organizer-v1.6.0.xpi`** from [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases/latest) or from [`dist/organizer-v1.6.0.xpi`](dist/organizer-v1.6.0.xpi).
 2. In Zotero, open **Tools → Plugins** (*Ferramentas → Plugins*).
 3. Click the **gear icon** in the top-right corner and choose **Install Plugin From File…** (*Instalar plugin a partir de arquivo…*).
-4. Select **`organizer-v1.5.1.xpi`**.
+4. Select **`organizer-v1.6.0.xpi`**.
 
 The plugin activates immediately without restarting Zotero. Users upgrading from `Eixos Organizer v1.x` keep all existing managed-folder rules, settings, and API keys automatically.
 
@@ -165,7 +165,7 @@ Zotero-Organizer/
 ├── README.md                         # English documentation
 ├── README.pt-BR.md                   # Portuguese (Brazil) documentation
 └── dist/
-    └── organizer-v1.5.1.xpi          # Current stable build ready for Zotero installation
+    └── organizer-v1.6.0.xpi          # Current stable build ready for Zotero installation
 ```
 
 > **Note on `dist/`:** Starting with `v1.5.0`, `dist/` keeps only the latest stable `.xpi` package to keep the repository lightweight. All historical `.xpi` builds (`v1.0.0` – `v1.4.2`) remain archived and downloadable in [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases).
@@ -210,7 +210,8 @@ Every release is tracked via Git tags and [GitHub Releases](https://github.com/F
 
 | Version | Date | Release / Commit | Package `.xpi` | Summary |
 |---|---|---|---|---|
-| **`v1.5.1`** *(stable)* | 2026-11-26 | [`v1.5.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Encrypted local API key vault**: encrypts AI API keys locally via Zotero/Gecko **NSS (`key4.db`)** with **AES-256-GCM** fallback, auto-migrates & wipes legacy plaintext prefs, moves Gemini API key to `x-goog-api-key` HTTP header, sanitizes secrets from error logs, adds **Clear Key** button & vault badge, strengthens `.gitignore`, and establishes the **`dev` → PR → `main`** workflow |
+| **`v1.6.0`** *(stable)* | 2026-11-26 | [`v1.6.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.6.0) | `dist/organizer-v1.6.0.xpi` | **Fine-grained 2-level Axis → Subtheme filtering**: automatically subdivides large axes (`>= 4` items, configurable) into numbered subthemes (`1.1 ...`, `1.2 ...`) in both Offline and Hybrid AI modes, adds indented subtheme hierarchy & inline **`+ Subtheme`** button in Plan Preview, and creates & verifies 2-level Zotero subcollections in live execution |
+| **`v1.5.1`** | 2026-11-26 | [`v1.5.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.1) (`a693599`) | *GitHub Release* | **Encrypted local API key vault & auto-update**: encrypts AI API keys locally via Zotero/Gecko **NSS (`key4.db`)** with **AES-256-GCM** fallback, auto-migrates & wipes legacy plaintext prefs, moves Gemini API key to `x-goog-api-key` header, adds SHA-256 `update_hash` & GitHub Actions auto-release for Zotero auto-updates |
 | **`v1.5.0`** | 2026-11-26 | [`v1.5.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **First stable public release**: renamed to **Organizer**, full live **English / Portuguese (PT-BR)** language switcher in Settings (UI, dialogs, notifications, offline seeds & AI prompts), bilingual `README.md` + `README.pt-BR.md`, and clean `dist/` keeping only the current build |
 | **`v1.4.2`** | 2026-11-26 | [`v1.4.2`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Fixed modal `saveTx()` deadlock during plan execution (switched `plan-dialog` to non-modal with live progress), fixed Gecko `<select>` text overlap in expanded item lists, and eliminated numbering gaps |
 | **`v1.4.1`** | 2026-11-26 | [`v1.4.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Standardized sequential numbering (`01 - Topic`, `02 - Topic`, and `N.M Subtopic`) across offline, AI, and manual plan axes with prefix-aware deduplication |
@@ -222,7 +223,13 @@ Every release is tracked via Git tags and [GitHub Releases](https://github.com/F
 
 ### Detailed Release Notes
 
-#### `v1.5.1` — `organizer-v1.5.1.xpi` *(current stable)*
+#### `v1.6.0` — `organizer-v1.6.0.xpi` *(current stable)*
+- **Fine-Grained 2-Level Filtering (Axis → Subtheme):** whenever an axis gathers enough items (`subthemeMinItems`, default `4`, configurable in Settings), Organizer automatically refines it into **up to 3 numbered subthemes** (`1.1 ...`, `1.2 ...`, `1.3 ...`) — e.g. subdividing *01 - Gender, Feminism & Sexual Violence* into *1.1 Feminist Theory, Gender & Intersectionality* and *1.2 Sexual Violence in Conflicts & "Comfort Women"*.
+- **Both Offline & Hybrid AI Engines:** curated bilingual subtheme seeds across all 11 academic domains for Offline mode, plus a hierarchical 2-level JSON schema (`axes[].subthemes[]`) and keyword cross-checking for AI mode (with automatic offline safety-net subdivision if AI leaves a large axis flat).
+- **Hierarchical Plan Preview & Manual `+ Subtheme`:** Level-2 subthemes display indented beneath their parent axis with a `Subtheme` badge, editable inline names, parent/child checkbox syncing, and a **`+ Subtheme`** button on every axis to create custom subthemes directly in the plan.
+- **2-Pass Verified Execution:** creates Level-1 axes first, then nested Level-2 subthemes inside each parent axis, and verifies every single link against Zotero's `collectionItems` database showing `Axis › Subtheme` paths.
+
+#### `v1.5.1` *(archived in GitHub Releases)*
 - **Encrypted Local API Key Storage (`src/crypto.js`):** API keys are now encrypted before saving using Zotero/Gecko's native **NSS Secret Decoder Ring (`key4.db`)** with an automatic **WebCrypto AES-256-GCM** fallback (using a separate 256-bit local profile key outside `prefs.js`).
 - **Automatic Plaintext Migration & Wipe:** any API key saved in plaintext by `v1.0`–`v1.5.0` is transparently encrypted and wiped from `extensions.eixosOrganizer.aiApiKey` on startup.
 - **Zero Key Leakage in HTTP / Logs:** Gemini requests now send the API key via the official `x-goog-api-key` header (instead of `?key=` in the URL), and all HTTP errors pass through `sanitizeErrorText()` so keys/tokens never appear in error messages or Zotero debug logs.

@@ -6,7 +6,7 @@
 
 # Organizer — Plugin para Zotero (Zotero 7 / 8 / 10)
 
-> **v1.5.1 — Versão Estável Pública (Cofre Criptografado para Chave de API)**
+> **v1.6.0 — Versão Estável Pública (Filtragem Fina em 2 Níveis: Eixo → Subtema)**
 
 Plugin **100% não-destrutivo** para o Zotero que organiza automaticamente livros, artigos, teses e PDFs em **subcoleções numeradas por Eixo e Tema** — com motor **híbrido (cruzamento IA + palavras-chave + fallback offline)**, **tela única de revisão do plano com verificação real no banco do Zotero**, **seletor completo de idioma (Português / Inglês)** nas configurações e **compartilhamento opcional de regras via Zotero Sync / WebDAV**.
 
@@ -34,7 +34,7 @@ Plugin **100% não-destrutivo** para o Zotero que organiza automaticamente livro
 
 Quando você mantém coleções gerais no Zotero (por exemplo, `Livros`, `Artigos e Teses` ou `Minha biblioteca`), o **Organizer** cria e mantém automaticamente uma árvore temática paralela (`<Coleção> - Por Eixo e Tema` em português ou `<Collection> - By Axis & Theme` em inglês):
 
-1. **Plano completo em 1 única tela:** clique com o botão direito em qualquer coleção → **Organizer: Organizar por Eixo e Tema (Ver Plano)…**. O plugin analisa todos os itens pendentes em memória e exibe o plano inteiro com eixos numerados (`01 - Tema`, `02 - Tema`, …). Você pode renomear eixos, marcar/desmarcar grupos, **criar índices manuais**, atribuir ou remover itens e reanalisar com IA ou Offline antes de alterar qualquer coisa no Zotero.
+1. **Plano completo em 2 níveis em 1 única tela:** clique com o botão direito em qualquer coleção → **Organizer: Organizar por Eixo e Tema (Ver Plano)…**. O plugin analisa todos os itens pendentes em memória e monta uma **hierarquia em 2 níveis** com eixos numerados (`01 - Gênero, Feminismo e Violência Sexual`) e subtemas finos numerados (`1.1 Teoria Feminista`, `1.2 Violência Sexual em Conflitos`, …) sempre que um eixo tiver itens suficientes (limite configurável, padrão `4`). Você pode renomear eixos ou subtemas, marcar/desmarcar grupos, **criar eixos ou `+ Subtema` manuais**, atribuir/remover itens e reanalisar com IA ou Offline antes de alterar qualquer coisa no Zotero.
 2. **Execução com verificação real no banco:** ao clicar em **Executar Organização**, a janela permanece aberta exibindo o progresso ao vivo, cria/reutiliza a subcoleção temática e os eixos, vincula cada item e **consulta diretamente o banco do Zotero (`collectionItems`) para confirmar cada vínculo** (com retentativa automática de pendências) antes de liberar **Concluir e Fechar**.
 3. **Sem precisar criar pasta vazia antes:** se a coleção já possuir uma subcoleção temática (interna ou irmã no padrão `<Nome> - Por Eixo e Tema` / `<Name> - By Axis & Theme`), o Organizer parte dela automaticamente; caso contrário, cria `<Nome da Coleção> - Por Eixo e Tema` dentro dela ao executar.
 4. **Tempo real automático com notificação:** uma vez que a pasta está gerenciada, ao arrastar ou salvar qualquer novo livro, artigo, tese ou PDF nela, o plugin resolve os metadados completos do item pai, anexa nos eixos correspondentes e mostra uma notificação informando exatamente onde o item foi anexado.
@@ -56,10 +56,10 @@ Quando você mantém coleções gerais no Zotero (por exemplo, `Livros`, `Artigo
 
 Compatível com **Zotero 7, 8 e 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Baixe **`organizer-v1.5.1.xpi`** em [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases/latest) ou na pasta [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
+1. Baixe **`organizer-v1.6.0.xpi`** em [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases/latest) ou na pasta [`dist/organizer-v1.6.0.xpi`](dist/organizer-v1.6.0.xpi).
 2. No Zotero, abra **Ferramentas → Plugins** (*Tools → Plugins*).
 3. Clique no ícone de **engrenagem** no canto superior direito e escolha **Instalar plugin a partir de arquivo…** (*Install Plugin From File…*).
-4. Selecione o arquivo **`organizer-v1.5.1.xpi`**.
+4. Selecione o arquivo **`organizer-v1.6.0.xpi`**.
 
 O plugin entra em operação imediatamente (sem precisar reiniciar o Zotero). Quem já usava o `Eixos Organizer v1.x` mantém automaticamente todas as regras, preferências e chaves de API configuradas.
 
@@ -165,7 +165,7 @@ Zotero-Organizer/
 ├── README.md                         # Documentação em Inglês
 ├── README.pt-BR.md                   # Documentação em Português (Brasil)
 └── dist/
-    └── organizer-v1.5.1.xpi          # Build estável atual pronta para instalação no Zotero
+    └── organizer-v1.6.0.xpi          # Build estável atual pronta para instalação no Zotero
 ```
 
 > **Nota sobre `dist/`:** a partir da `v1.5.0`, a pasta `dist/` mantém apenas o pacote `.xpi` da versão atual para manter o repositório enxuto. Todas as builds antigas (`v1.0.0` – `v1.4.2`) continuam arquivadas e disponíveis para download em [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases).
@@ -210,7 +210,8 @@ Todas as versões possuem rastreio completo por commit, tag Git e [GitHub Releas
 
 | Versão | Data | Release / Commit | Pacote `.xpi` | Resumo da evolução |
 |---|---|---|---|---|
-| **`v1.5.1`** *(estável)* | 26/11/2026 | [`v1.5.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Cofre criptografado local para Chave de API**: criptografia local via **NSS (`key4.db`)** do Zotero/Gecko com fallback **AES-256-GCM**, migração e limpeza automática da preferência legada em texto puro, envio da chave Gemini no header `x-goog-api-key`, sanitização de segredos em logs de erro, botão **Limpar Chave**, `.gitignore` reforçado e fluxo **`dev` → PR → `main`** |
+| **`v1.6.0`** *(estável)* | 26/11/2026 | [`v1.6.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.6.0) | `dist/organizer-v1.6.0.xpi` | **Filtragem fina em 2 níveis (Eixo → Subtema)**: subdivide automaticamente eixos grandes (`>= 4` itens, configurável) em subtemas numerados (`1.1 ...`, `1.2 ...`) nos modos Offline e IA Híbrida, hierarquia indentada com botão **`+ Subtema`** no Plano e criação/verificação em 2 níveis no Zotero |
+| **`v1.5.1`** | 26/11/2026 | [`v1.5.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.1) (`a693599`) | *GitHub Release* | **Cofre criptografado local e atualização automática**: criptografia local da Chave de API via **NSS (`key4.db`)** + **AES-256-GCM**, migração e limpeza de texto puro, header `x-goog-api-key`, `SHA-256` em `updates.json` e GitHub Actions para auto-update no Zotero |
 | **`v1.5.0`** | 26/11/2026 | [`v1.5.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **Primeira versão estável pública**: renomeado para **Organizer**, seletor de idioma **Português (Brasil) / English / Automático** nas configurações (interface, janelas, notificações, vocabulário offline e IA), documentação bilíngue (`README.md` + `README.pt-BR.md`) e `dist/` enxuta apenas com a build atual |
 | **`v1.4.2`** | 26/11/2026 | [`v1.4.2`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Correção do deadlock modal na execução do plano (`openDialog` não-modal + progresso ao vivo), correção visual de textos sobrepostos na lista de itens e numeração sequencial sem lacunas |
 | **`v1.4.1`** | 26/11/2026 | [`v1.4.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Numeração automática padronizada (`01 - Tema`, `02 - Tema` e `N.M Subtema`) em eixos gerados offline, pela IA ou criados manualmente no plano |
@@ -222,7 +223,13 @@ Todas as versões possuem rastreio completo por commit, tag Git e [GitHub Releas
 
 ### Detalhes de cada versão
 
-#### `v1.5.1` — `organizer-v1.5.1.xpi` *(estável atual)*
+#### `v1.6.0` — `organizer-v1.6.0.xpi` *(estável atual)*
+- **Filtragem fina em 2 níveis (Eixo → Subtema):** sempre que um eixo acumula itens suficientes (`subthemeMinItems`, padrão `4`, configurável nas Configurações), o Organizer refina automaticamente aquele eixo em **até 3 subtemas numerados** (`1.1 ...`, `1.2 ...`, `1.3 ...`) — por exemplo, subdividindo *01 - Gênero, Feminismo e Violência Sexual* em *1.1 Teoria Feminista, Gênero e Interseccionalidade* e *1.2 Violência Sexual em Conflitos e "Comfort Women"*.
+- **Modos Offline e IA Híbrida:** vocabulário bilíngue curado de subtemas para todos os 11 grandes eixos no modo Offline + esquema JSON hierárquico (`axes[].subthemes[]`) com cruzamento por palavras-chave na IA (incluindo rede de segurança automática caso a IA deixe um eixo grande sem subdividir).
+- **Tela do Plano hierárquica + `+ Subtema` manual:** subtemas aparecem indentados logo abaixo do eixo pai com badge `Subtema`, renomeação inline, sincronização do checkbox pai/filhos e botão **`+ Subtema`** em qualquer eixo para criar subtemas manuais diretamente no plano.
+- **Execução em 2 fases com verificação real no Zotero:** cria primeiro os eixos raiz (Nível 1), depois cria cada subtema dentro do eixo correspondente (Nível 2) e verifica todos os vínculos na tabela `collectionItems` exibindo o caminho `Eixo › Subtema`.
+
+#### `v1.5.1` *(arquivada no GitHub Releases)*
 - **Armazenamento criptografado da Chave de API (`src/crypto.js`):** chaves de API agora são criptografadas antes de serem gravadas no computador usando o cofre nativo **NSS Secret Decoder Ring (`key4.db`)** do Zotero/Gecko, com fallback automático para **WebCrypto AES-256-GCM** (chave aleatória de 256 bits isolada em arquivo próprio no perfil do Zotero, fora do `prefs.js`).
 - **Migração e remoção automática de texto puro:** qualquer chave salva nas versões `v1.0`–`v1.5.0` é criptografada automaticamente e removida da preferência legada `extensions.eixosOrganizer.aiApiKey` assim que o plugin inicia.
 - **Zero vazamento em URL ou logs:** chamadas ao Gemini passam a enviar a chave no cabeçalho oficial `x-goog-api-key` (em vez de `?key=` na URL), e todos os erros passam por `sanitizeErrorText()` para nunca expor chaves ou tokens em notificações ou logs do Zotero.

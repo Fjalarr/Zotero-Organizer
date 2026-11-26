@@ -440,34 +440,57 @@ var EixosMain = (function () {
       // Register managed rule automatically so future items dropped in `col` are organized in real time
       await ensureRuleRegistered(libID, col, targetRootCol);
 
-      // Create/resolve all approved axis subcollections (including empty manual indices!)
-      const totalGroups = (payload.groups || []).length;
+      // Create/resolve all approved axes (Pass 1: Level-1 roots, Pass 2: Level-2 subthemes)
+      const allPayloadGroups = payload.groups || [];
+      const orderedGroups = allPayloadGroups
+        .filter((g) => !g.isSubtheme)
+        .concat(allPayloadGroups.filter((g) => g.isSubtheme));
+      const totalGroups = orderedGroups.length;
       reportProgress(18, tr("progCreatingAxes", { count: totalGroups }));
       const itemToColIDs = new Map();
       const colNameByID = new Map();
+      const resolvedColByGroupId = new Map();
       const createdAxisNames = [];
 
       for (let gIdx = 0; gIdx < totalGroups; gIdx++) {
-        const grp = payload.groups[gIdx];
+        const grp = orderedGroups[gIdx];
         reportProgress(
           18 + Math.round(((gIdx + 1) / Math.max(1, totalGroups)) * 12),
           tr("progPreparingAxis", { idx: gIdx + 1, total: totalGroups, name: grp.name })
         );
         let axisCol = null;
+        let parentDisplayName = null;
         if (!grp.isNew && grp.existingKey) {
           axisCol = Zotero.Collections.getByLibraryAndKey(libID, grp.existingKey);
         }
         if (!axisCol) {
           let parentID = targetRootCol.id;
-          if (grp.parentKey && grp.parentKey !== "__ROOT__" && grp.parentKey !== targetRootCol.key) {
+          if (grp.isSubtheme && grp.parentGroupId && resolvedColByGroupId.has(grp.parentGroupId)) {
+            const pCol = resolvedColByGroupId.get(grp.parentGroupId);
+            parentID = pCol.id;
+            parentDisplayName = pCol.name;
+          } else if (
+            grp.parentKey &&
+            grp.parentKey !== "__ROOT__" &&
+            grp.parentKey !== targetRootCol.key
+          ) {
             const pCol = Zotero.Collections.getByLibraryAndKey(libID, grp.parentKey);
-            if (pCol) parentID = pCol.id;
+            if (pCol) {
+              parentID = pCol.id;
+              parentDisplayName = pCol.name;
+            }
           }
           axisCol = await EixosOrganizer.getOrCreateSubcollection(libID, parentID, grp.name);
-          createdAxisNames.push(axisCol.name);
+          createdAxisNames.push(parentDisplayName ? `${parentDisplayName} › ${axisCol.name}` : axisCol.name);
         }
 
-        colNameByID.set(axisCol.id, axisCol.name);
+        if (grp.id) {
+          resolvedColByGroupId.set(grp.id, axisCol);
+        }
+        colNameByID.set(
+          axisCol.id,
+          parentDisplayName ? `${parentDisplayName} › ${axisCol.name}` : axisCol.name
+        );
 
         for (const itemID of grp.itemIds || []) {
           if (!itemToColIDs.has(itemID)) itemToColIDs.set(itemID, new Set());

@@ -82,6 +82,14 @@
           <html:span data-i18n="prefCheckAllowCreate">Allow suggesting/creating new subcollections when a new topic appears</html:span>
         </html:label>
         <html:label class="eixos-check">
+          <html:input id="eixos-enable-subthemes" type="checkbox" />
+          <html:span data-i18n="prefCheckEnableSubthemes">Fine-grained 2-level filtering: create numbered subthemes inside each axis (e.g. 1.1, 1.2) when enough items match</html:span>
+        </html:label>
+        <html:div class="eixos-field" style="max-width: 360px; margin-left: 22px;">
+          <html:label for="eixos-subtheme-min" data-i18n="prefLabelSubthemeMin">Min items in an axis before subdividing into subthemes:</html:label>
+          <html:input id="eixos-subtheme-min" type="number" min="2" max="20" value="4" />
+        </html:div>
+        <html:label class="eixos-check">
           <html:input id="eixos-skip-classified" type="checkbox" />
           <html:span data-i18n="prefCheckSkipClassified">Do not touch items I already placed directly inside a thematic axis/subcollection</html:span>
         </html:label>
