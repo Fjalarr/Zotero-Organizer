@@ -1,9 +1,16 @@
+import json
 import os
 import zipfile
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST_DIR = os.path.join(ROOT, "dist")
-XPI_PATH = os.path.join(DIST_DIR, "zotero-eixos-organizer.xpi")
+
+with open(os.path.join(ROOT, "manifest.json"), encoding="utf-8") as f:
+    MANIFEST = json.load(f)
+
+VERSION = MANIFEST["version"]
+XPI_NAME = f"zotero-eixos-organizer-v{VERSION}.xpi"
+XPI_PATH = os.path.join(DIST_DIR, XPI_NAME)
 
 INCLUDE_FILES = [
     "manifest.json",
@@ -35,3 +42,8 @@ print(f"Built {XPI_PATH} ({os.path.getsize(XPI_PATH)} bytes)")
 with zipfile.ZipFile(XPI_PATH, "r") as zf:
     for info in zf.infolist():
         print(f"  {info.filename:45s} {info.file_size:6d} B")
+
+existing_builds = sorted(f for f in os.listdir(DIST_DIR) if f.endswith(".xpi"))
+print(f"\nBuilds preservadas em dist/ ({len(existing_builds)}):")
+for b in existing_builds:
+    print(f"  - {b} ({os.path.getsize(os.path.join(DIST_DIR, b))} bytes)")

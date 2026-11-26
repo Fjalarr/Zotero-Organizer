@@ -1,7 +1,7 @@
 <vbox id="eixos-organizer-prefpane"
       xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
       xmlns:html="http://www.w3.org/1999/xhtml"
-      onload="event.waitUntil(EixosPrefsPane.init())">
+      onload="Zotero.EixosOrganizer &amp;&amp; Zotero.EixosOrganizer._prefsPane &amp;&amp; Zotero.EixosOrganizer._prefsPane.init()">
   <html:div class="eixos-pref-root">
     <html:div class="eixos-header">
       <html:h2>Eixos Organizer — Classificação Automática por Eixo e Tema</html:h2>
@@ -38,6 +38,7 @@
           </html:label>
           <html:button id="eixos-btn-add-rule" type="button" class="eixos-btn eixos-btn-primary">+ Adicionar Pasta Gerenciada</html:button>
         </html:div>
+        <html:div id="eixos-rules-status" class="eixos-status"></html:div>
       </html:div>
     </html:section>
 
@@ -113,15 +114,15 @@
       </html:div>
     </html:section>
 
-    <!-- 4. Sincronização com equipe / WebDAV -->
+    <!-- 4. Sincronização das regras do plugin -->
     <html:section class="eixos-card">
-      <html:h3>4. Compartilhamento entre Usuários (Zotero Sync / WebDAV)</html:h3>
+      <html:h3>4. Sincronizar Regras do Plugin (Opcional)</html:h3>
       <html:label class="eixos-check">
         <html:input id="eixos-sync-library" type="checkbox" />
-        Sincronizar lista de pastas gerenciadas em uma nota da biblioteca (sem salvar chaves de API)
+        Compartilhar automaticamente a lista de pastas monitoradas com outros PCs desta biblioteca
       </html:label>
       <html:p class="eixos-help">
-        Qualquer pessoa que sincronize a mesma biblioteca/WebDAV e instale este plugin herdará automaticamente o mapeamento de pastas. Você também pode exportar/importar em JSON.
+        As coleções e PDFs já são sincronizados nativamente pelo Zotero/WebDAV. Esta opção sincroniza apenas quais pastas o plugin deve vigiar (em uma nota interna, sem chaves de API), para que outras pessoas não precisem reconfigurar as regras manualmente.
       </html:p>
       <html:div class="eixos-btn-row">
         <html:button id="eixos-btn-sync-push" type="button" class="eixos-btn">Salvar na Nota Sincronizada</html:button>

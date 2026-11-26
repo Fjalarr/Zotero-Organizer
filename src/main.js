@@ -11,7 +11,7 @@ var EixosMain = (function () {
     }
   } catch (e) {}
 
-  let pluginID = "eixos-organizer@miguelbarreto.local";
+  let pluginID = "eixos-organizer@danielbarreto.local";
   let rootURI = "";
   let notifierID = null;
   let prefPaneID = null;

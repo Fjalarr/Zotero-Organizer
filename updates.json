@@ -1,0 +1,18 @@
+{
+  "addons": {
+    "eixos-organizer@danielbarreto.local": {
+      "updates": [
+        {
+          "version": "1.1.0",
+          "update_link": "https://github.com/Fjalarr/zotero-eixos-organizer/releases/download/v1.1.0/zotero-eixos-organizer-v1.1.0.xpi",
+          "applications": {
+            "zotero": {
+              "strict_min_version": "7.0",
+              "strict_max_version": "10.*"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
