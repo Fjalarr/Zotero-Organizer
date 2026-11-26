@@ -67,6 +67,23 @@ var EixosClassifier = (function () {
         "metodologia", "methodology", "arquivos", "archive", "documento", "monumento", "fontes",
         "narrativa", "epistemologia", "tempo", "passado", "passados", "historical",
       ],
+      subthemes: [
+        {
+          name: "Temporalidade, Historicidade e História dos Conceitos",
+          nameEn: "Temporality, Historicity & Conceptual History",
+          keywords: ["koselleck", "hartog", "temporalidade", "temporality", "historicidade", "historicity", "presentismo", "anacronismo", "conceitos", "conceptual", "tempo", "passado", "passados", "futuro", "benjamin"],
+        },
+        {
+          name: "Narrativa, Epistemologia e Escrita da História",
+          nameEn: "Narrative, Epistemology & Historical Writing",
+          keywords: ["ricoeur", "white", "narrativa", "narrative", "epistemologia", "epistemology", "historiografia", "historiography", "historiografico", "escrita", "writing", "teoria", "theory"],
+        },
+        {
+          name: "Arquivos, Fontes e Metodologia Histórica",
+          nameEn: "Archives, Primary Sources & Historical Methodology",
+          keywords: ["arquivos", "archive", "archives", "documento", "document", "monumento", "fontes", "sources", "metodologia", "methodology", "bloch", "braudel", "oral", "micro-historia"],
+        },
+      ],
     },
     {
       name: "Teoria Social, Filosofia Política e Capitalismo",
@@ -80,6 +97,23 @@ var EixosClassifier = (function () {
         "biopoder", "necropolitica", "sociologia", "sociology", "filosofia", "philosophy",
         "trabalho", "labor", "labour", "acumulacao", "reproducao", "burguesia", "proletariado",
       ],
+      subthemes: [
+        {
+          name: "Marxismo, Capitalismo e Economia Política",
+          nameEn: "Marxism, Capitalism & Political Economy",
+          keywords: ["marx", "marxismo", "marxism", "marxist", "capital", "capitalismo", "capitalism", "capitalista", "economia", "economy", "economic", "trabalho", "labor", "labour", "acumulacao", "classe", "class", "proletariado", "burguesia", "neoliberalismo", "neoliberalism"],
+        },
+        {
+          name: "Estado, Democracia, Fascismo e Poder",
+          nameEn: "State, Democracy, Fascism & Power",
+          keywords: ["estado", "state", "soberania", "sovereignty", "fascismo", "fascism", "neofascismo", "populismo", "populism", "democracia", "democracy", "biopoder", "necropolitica", "autoritarismo", "totalitarismo", "arendt", "foucault"],
+        },
+        {
+          name: "Hegemonia, Ideologia e Filosofia Social",
+          nameEn: "Hegemony, Ideology & Social Philosophy",
+          keywords: ["gramsci", "hegemonia", "hegemony", "ideologia", "ideology", "sociologia", "sociology", "filosofia", "philosophy", "liberalismo", "liberalism", "teoria", "critica", "frankfurt", "habermas"],
+        },
+      ],
     },
     {
       name: "Estudos Pós-Coloniais, Colonialismo e Imperialismo",
@@ -92,6 +126,23 @@ var EixosClassifier = (function () {
         "sul", "anticolonial", "anti-colonial", "descolonizacao", "decolonization", "spivak",
         "said", "fanon", "mbembe", "chakrabarty", "prakash", "bhabha",
       ],
+      subthemes: [
+        {
+          name: "Teoria Pós-Colonial, Subalternidade e Decolonialidade",
+          nameEn: "Postcolonial Theory, Subalternity & Decoloniality",
+          keywords: ["subalterno", "subaltern", "spivak", "said", "orientalismo", "orientalism", "bhabha", "chakrabarty", "prakash", "mbembe", "decolonial", "descolonial", "eurocentrismo", "eurocentrism", "pos-colonial", "postcolonial"],
+        },
+        {
+          name: "Impérios, Imperialismo e Colonialismo de Povoamento",
+          nameEn: "Empires, Imperialism & Settler Colonialism",
+          keywords: ["imperialismo", "imperialism", "imperio", "empire", "imperial", "settler", "povoamento", "metropole", "colonia", "colony", "lenin", "capital", "expansion"],
+        },
+        {
+          name: "Lutas Anticoloniais e Descolonização",
+          nameEn: "Anticolonial Struggles & Decolonization",
+          keywords: ["anticolonial", "anti-colonial", "descolonizacao", "decolonization", "fanon", "independencia", "independence", "resistencia", "resistance", "nacionalismo", "nationalism", "terceiro", "sul", "south"],
+        },
+      ],
     },
     {
       name: "Ásia Oriental, Japão e Coreia",
@@ -102,6 +153,23 @@ var EixosClassifier = (function () {
         "manchukuo", "taiwan", "okinawa", "hiroshima", "nagasaki", "toquio", "tokyo", "seoul",
         "meiji", "showa", "pacifico", "pacific", "pan-asianism", "ienaga", "maruyama", "dower",
         "chosen", "joseon", "oriental", "nippon",
+      ],
+      subthemes: [
+        {
+          name: "Colonialismo Japonês, Império e Guerra do Pacífico",
+          nameEn: "Japanese Colonialism, Empire & Pacific War",
+          keywords: ["japao", "japan", "japanese", "japones", "meiji", "showa", "imperial", "empire", "settler", "manchuria", "manchukuo", "hiroshima", "nagasaki", "pacifico", "pacific", "tokyo", "toquio", "dower", "ienaga", "maruyama", "okinawa"],
+        },
+        {
+          name: "História da Coreia, Resistência e Pós-Guerra",
+          nameEn: "Korean History, Resistance & Postwar",
+          keywords: ["coreia", "korea", "korean", "coreano", "coreana", "seoul", "seul", "chosen", "joseon", "peasant", "campones", "koch", "protest", "division", "korean war"],
+        },
+        {
+          name: "China, Taiwan e Relações na Ásia Oriental",
+          nameEn: "China, Taiwan & East Asian Relations",
+          keywords: ["china", "chinese", "chines", "taiwan", "pan-asianism", "east", "asia", "asian", "asiatico", "mao", "beijing", "pequim", "cold war"],
+        },
       ],
     },
     {
@@ -117,6 +185,23 @@ var EixosClassifier = (function () {
         "impunidade", "impunity", "vitimas", "victims", "responsabilidade", "perlaboracao",
         "war", "guerra", "atrocidades", "atrocities", "sierra", "leone",
       ],
+      subthemes: [
+        {
+          name: "Holocausto, Genocídio e Testemunho",
+          nameEn: "Holocaust, Genocide & Testimony",
+          keywords: ["holocausto", "holocaust", "shoah", "auschwitz", "genocidio", "genocide", "eichmann", "testemunho", "testimony", "witness", "witnesses", "testify", "vitimas", "victims", "atrocidades", "atrocities", "responsabilidade"],
+        },
+        {
+          name: "Justiça de Transição, Tribunais e Reparações",
+          nameEn: "Transitional Justice, Tribunals & Reparations",
+          keywords: ["justica", "justice", "transicao", "transitional", "tribunal", "tribunals", "court", "crimes", "reparacao", "reparacoes", "reparation", "reparations", "comissao", "verdade", "truth", "anistia", "nuremberg", "hague", "haia", "impunidade", "sierra", "leone"],
+        },
+        {
+          name: "Políticas da Memória, Trauma e Ditaduras",
+          nameEn: "Politics of Memory, Trauma & Dictatorships",
+          keywords: ["memoria", "memory", "memories", "trauma", "traumatic", "esquecimento", "forgetting", "luto", "silencio", "silence", "ditadura", "dictatorship", "perlaboracao", "monumento", "comemoracao"],
+        },
+      ],
     },
     {
       name: "Gênero, Feminismo e Violência Sexual",
@@ -129,6 +214,23 @@ var EixosClassifier = (function () {
         "maternidade", "maternal", "maes", "corpo", "body", "violencia", "violence", "shame",
         "vergonha", "masculinidade", "feminino", "queer", "hooks", "butler", "federici",
       ],
+      subthemes: [
+        {
+          name: "Teoria Feminista, Gênero e Interseccionalidade",
+          nameEn: "Feminist Theory, Gender & Intersectionality",
+          keywords: ["feminismo", "feminism", "feminista", "feminist", "interseccionalidade", "intersectionality", "patriarcado", "patriarchy", "butler", "hooks", "federici", "queer", "masculinidade", "teoria", "genero", "gender"],
+        },
+        {
+          name: "Violência Sexual em Conflitos e \"Comfort Women\"",
+          nameEn: "Sexual Violence in Conflicts & \"Comfort Women\"",
+          keywords: ["conforto", "comfort", "wianbu", "ianfu", "estupro", "rape", "violencia", "violence", "prostitution", "prostituicao", "escravidao", "slavery", "slaves", "guerra", "war", "shame", "vergonha", "military", "militar"],
+        },
+        {
+          name: "Corpo, Sexualidade e Maternidade",
+          nameEn: "Body, Sexuality & Motherhood",
+          keywords: ["corpo", "body", "sexualidade", "sexuality", "maternidade", "maternal", "maes", "reproducao", "reproduction", "feminino", "saude", "aborto"],
+        },
+      ],
     },
     {
       name: "Escravidão, Raça e Mundo Atlântico",
@@ -138,6 +240,18 @@ var EixosClassifier = (function () {
         "abolition", "alforria", "atlantico", "atlantic", "raca", "race", "racial", "racismo",
         "racism", "negro", "negros", "black", "africa", "african", "africano", "afro", "casta",
         "caste", "diaspora", "plantation", "trafico", "marquese", "hartman", "gilroy",
+      ],
+      subthemes: [
+        {
+          name: "Escravidão, Tráfico Atlântico e Abolição",
+          nameEn: "Slavery, Atlantic Trade & Abolition",
+          keywords: ["escravidao", "slavery", "escravo", "slave", "slaves", "abolicao", "abolition", "alforria", "trafico", "plantation", "atlantico", "atlantic", "marquese"],
+        },
+        {
+          name: "Raça, Racismo e Diáspora Africana",
+          nameEn: "Race, Racism & African Diaspora",
+          keywords: ["raca", "race", "racial", "racismo", "racism", "negro", "black", "africa", "african", "afro", "diaspora", "hartman", "gilroy", "casta", "caste"],
+        },
       ],
     },
     {
@@ -149,6 +263,23 @@ var EixosClassifier = (function () {
         "argentina", "mexico", "chile", "cuba", "peru", "colombia", "uruguai", "paraguai",
         "vargas", "republica", "imperio", "independencia", "cnv", "indigena", "indigenas",
         "sertão", "sertao", "amazonia", "pernambuco", "fluminense",
+      ],
+      subthemes: [
+        {
+          name: "Brasil Colonial e Imperial",
+          nameEn: "Colonial & Imperial Brazil",
+          keywords: ["imperio", "independencia", "bahia", "minas", "pernambuco", "sertao", "indigena", "indigenas", "colonial", "escravidao"],
+        },
+        {
+          name: "Brasil Republicano, Vargas e Ditadura",
+          nameEn: "Republican Brazil, Vargas & Dictatorship",
+          keywords: ["republica", "vargas", "cnv", "ditadura", "rio", "janeiro", "paulo", "nordeste", "amazonia", "fluminense", "brasil", "brazil"],
+        },
+        {
+          name: "América Latina e Estudos Ibero-Americanos",
+          nameEn: "Latin America & Ibero-American Studies",
+          keywords: ["america", "latina", "latin", "ibero", "argentina", "mexico", "chile", "cuba", "peru", "colombia", "uruguai", "paraguai"],
+        },
       ],
     },
     {
@@ -162,6 +293,23 @@ var EixosClassifier = (function () {
         "fotografia", "photography", "visual", "religiao", "religion", "sagrado", "demonios",
         "demons", "bruxaria", "romaria", "sincretismo",
       ],
+      subthemes: [
+        {
+          name: "Cinema, Fotografia e Cultura Visual",
+          nameEn: "Cinema, Photography & Visual Culture",
+          keywords: ["cinema", "film", "filme", "filmes", "imagem", "imagens", "image", "images", "fotografia", "photography", "visual", "midia", "media"],
+        },
+        {
+          name: "Literatura, Estética, Artes e Música",
+          nameEn: "Literature, Aesthetics, Arts & Music",
+          keywords: ["literatura", "literature", "literario", "romance", "poesia", "estetica", "aesthetics", "arte", "artes", "art", "musica", "music", "teatro", "imprensa", "jornalismo"],
+        },
+        {
+          name: "Religião, Mentalidades e Imaginário Cultural",
+          nameEn: "Religion, Mentalities & Cultural Imaginary",
+          keywords: ["religiao", "religion", "sagrado", "demonios", "demons", "bruxaria", "romaria", "sincretismo", "costumes", "mentalidades", "imaginario", "simbolo"],
+        },
+      ],
     },
     {
       name: "Educação, Ensino de História e Pedagogia",
@@ -171,6 +319,18 @@ var EixosClassifier = (function () {
         "pedagogia", "pedagogy", "escola", "school", "escolar", "curriculo", "curriculum",
         "livro", "didatico", "textbook", "textbooks", "professor", "professores", "docente",
         "docencia", "aprendizagem", "learning", "saber", "universidade", "freire", "charlot",
+      ],
+      subthemes: [
+        {
+          name: "Ensino de História, Currículo e Livros Didáticos",
+          nameEn: "History Teaching, Curriculum & Textbooks",
+          keywords: ["ensino", "teaching", "didatica", "didactics", "curriculo", "curriculum", "didatico", "textbook", "textbooks", "escola", "school", "escolar"],
+        },
+        {
+          name: "Pedagogia, Formação Docente e Universidade",
+          nameEn: "Pedagogy, Teacher Education & Higher Education",
+          keywords: ["pedagogia", "pedagogy", "professor", "professores", "docente", "docencia", "aprendizagem", "learning", "universidade", "freire", "charlot", "educacao", "education"],
+        },
       ],
     },
     {
@@ -182,6 +342,23 @@ var EixosClassifier = (function () {
         "medieval", "antiguidade", "europa", "europe", "european", "alemanha", "germany",
         "franca", "france", "italia", "italy", "russia", "soviet", "uniao", "estados", "unidos",
         "united", "states", "guerra", "fria", "cold", "war", "internacional", "international",
+      ],
+      subthemes: [
+        {
+          name: "Oriente Médio, Palestina e Israel",
+          nameEn: "Middle East, Palestine & Israel",
+          keywords: ["palestina", "palestine", "palestinian", "israel", "israeli", "nakba", "sionismo", "zionist", "oriente", "middle", "arabe", "arab", "islam", "islamico"],
+        },
+        {
+          name: "História da Europa, Antiguidade e Medievo",
+          nameEn: "European, Ancient & Medieval History",
+          keywords: ["europa", "europe", "european", "alemanha", "germany", "franca", "france", "italia", "italy", "medieval", "antiguidade", "russia", "soviet"],
+        },
+        {
+          name: "Guerra Fria e Relações Internacionais",
+          nameEn: "Cold War & International Relations",
+          keywords: ["guerra", "fria", "cold", "war", "internacional", "international", "estados", "unidos", "united", "states", "diplomacia"],
+        },
       ],
     },
   ];
@@ -280,13 +457,21 @@ var EixosClassifier = (function () {
   function applyNumberingToNewGroups(groups, targetTree) {
     let nextNum = getNextRootAxisNumber(targetTree);
     const usedNums = new Set();
+    const existingEixoByKey = new Map();
     for (const e of (targetTree && targetTree.eixos) || []) {
+      existingEixoByKey.set(e.key, e);
       const m = String(e.name || "").trim().match(/^(\d{1,2})\s*[-–—]/);
       if (m) usedNums.add(parseInt(m[1], 10));
     }
-    // Always renumber newly proposed root axes cleanly & sequentially with no gaps (01, 02, 03...)
-    // while preserving explicit numbers on manually-created axes if user typed them.
+
+    const groupById = new Map();
     for (const g of groups) {
+      groupById.set(g.id, g);
+    }
+
+    // Pass 1: Number all Level-1 root axes sequentially (01 - ..., 02 - ...)
+    for (const g of groups) {
+      if (g.isSubtheme) continue;
       if (!g.isNew) continue;
       if (!g.parentKey || g.parentKey === "__ROOT__") {
         if (g.isManual) {
@@ -305,7 +490,176 @@ var EixosClassifier = (function () {
         nextNum++;
       }
     }
-    return groups;
+
+    // Pass 2: Number all Level-2 subthemes continuously under their parent axis (1.1 ..., 1.2 ...)
+    const subCountersByParent = new Map();
+    for (const g of groups) {
+      if (!g.isSubtheme) continue;
+      const parentGrp = g.parentGroupId ? groupById.get(g.parentGroupId) : null;
+      const existingParent = !parentGrp && g.parentKey ? existingEixoByKey.get(g.parentKey) : null;
+      const parentName =
+        (parentGrp && parentGrp.name) ||
+        (existingParent && existingParent.name) ||
+        g.parentName ||
+        "";
+      if (parentName) g.parentName = parentName;
+      if (!g.isNew) continue;
+
+      const parentIdKey = g.parentGroupId || g.parentKey || parentName || "__SUB__";
+      if (!subCountersByParent.has(parentIdKey)) {
+        let startSub = 0;
+        if (existingParent && Array.isArray(existingParent.children)) {
+          for (const ch of existingParent.children) {
+            const cm = String(ch.name || "").trim().match(/^(\d{1,2})\.(\d{1,2})\b/);
+            if (cm) startSub = Math.max(startSub, parseInt(cm[2], 10));
+          }
+          startSub = Math.max(startSub, existingParent.children.length);
+        }
+        subCountersByParent.set(parentIdKey, startSub);
+      }
+
+      const pm = String(parentName).trim().match(/^(\d{1,2})\s*[-–—]/);
+      const nextSub = subCountersByParent.get(parentIdKey) + 1;
+      subCountersByParent.set(parentIdKey, nextSub);
+      const baseSub = stripNumericPrefix(g.name) || String(g.name || "").trim();
+      g.name = pm ? `${parseInt(pm[1], 10)}.${nextSub} ${baseSub}` : `${nextSub}. ${baseSub}`;
+    }
+
+    // Order cleanly: Level-1 axes first (with their Level-2 subthemes grouped immediately below!)
+    const childrenByParent = new Map();
+    const roots = [];
+    const orphanSubs = [];
+    for (const g of groups) {
+      if (g.isSubtheme && g.parentGroupId && groupById.has(g.parentGroupId)) {
+        if (!childrenByParent.has(g.parentGroupId)) childrenByParent.set(g.parentGroupId, []);
+        childrenByParent.get(g.parentGroupId).push(g);
+      } else if (g.isSubtheme) {
+        orphanSubs.push(g);
+      } else {
+        roots.push(g);
+      }
+    }
+
+    const ordered = [];
+    for (const r of roots) {
+      ordered.push(r);
+      const kids = childrenByParent.get(r.id) || [];
+      for (const k of kids) ordered.push(k);
+    }
+    for (const o of orphanSubs) ordered.push(o);
+    return ordered;
+  }
+
+  function findMatchingTopicSeed(axisName) {
+    const norm = (s) =>
+      stripNumericPrefix(s)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    const target = norm(axisName);
+    if (!target) return null;
+    for (const seed of OFFLINE_TOPIC_SEEDS) {
+      if (norm(seed.name) === target || norm(seed.nameEn) === target) {
+        return seed;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Refines any large Level-1 axis (>= subthemeMinItems items) into Level-2 numbered subthemes
+   * when fine-grained 2-level filtering is enabled and >= 2 distinct subthemes emerge.
+   */
+  function subdivideAxisGroupsOffline(groups, targetTree, settings) {
+    if (settings.enableSubthemes === false || settings.allowCreateNew === false) {
+      return groups;
+    }
+    const minItems = Math.max(2, Number(settings.subthemeMinItems) || 4);
+    const existingEixoByKey = new Map(
+      ((targetTree && targetTree.eixos) || []).map((e) => [e.key, e])
+    );
+    const parentIdsWithKids = new Set(
+      groups.filter((g) => g.isSubtheme && g.parentGroupId).map((g) => g.parentGroupId)
+    );
+    const isEn = getActiveLocale(settings) === "en-US";
+    const result = [];
+
+    for (const g of groups) {
+      result.push(g);
+      if (g.isSubtheme) continue;
+      if (parentIdsWithKids.has(g.id)) continue;
+      if (!Array.isArray(g.items) || g.items.length < minItems) continue;
+
+      if (!g.isNew && g.existingKey) {
+        const ex = existingEixoByKey.get(g.existingKey);
+        if (ex && Array.isArray(ex.children) && ex.children.length > 0) continue;
+      }
+
+      const seed = findMatchingTopicSeed(g.name);
+      if (!seed || !Array.isArray(seed.subthemes) || seed.subthemes.length < 2) continue;
+
+      const buckets = new Map();
+      const otherItems = [];
+
+      for (const item of g.items) {
+        const vec = buildItemVector(item);
+        let bestSub = null;
+        let bestScore = 0;
+        for (const sub of seed.subthemes) {
+          const kwSet = new Set(sub.keywords.map((k) => tokenize(k)[0]).filter(Boolean));
+          let sc = 0;
+          for (const [tok, w] of vec.entries()) {
+            if (kwSet.has(tok)) sc += w;
+          }
+          if (sc > bestScore) {
+            bestScore = sc;
+            bestSub = sub;
+          }
+        }
+        if (bestSub && bestScore > 0) {
+          const subTitle = isEn ? bestSub.nameEn || bestSub.name : bestSub.name;
+          if (!buckets.has(subTitle)) buckets.set(subTitle, []);
+          buckets.get(subTitle).push(item);
+        } else {
+          otherItems.push(item);
+        }
+      }
+
+      if (otherItems.length > 0 && buckets.size >= 1) {
+        const otherLabel = tr("generalSubthemeName", null, settings);
+        buckets.set(otherLabel, otherItems);
+      }
+
+      // Only subdivide if at least 2 distinct subthemes have items
+      if (buckets.size < 2) continue;
+
+      const sortedBuckets = Array.from(buckets.entries()).sort((a, b) => b[1].length - a[1].length);
+      for (const [subName, subItems] of sortedBuckets) {
+        const normSub = subName
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+        result.push({
+          id: `sub:${g.id}:${normSub}`,
+          isNew: true,
+          isManual: false,
+          isSubtheme: true,
+          parentGroupId: g.id,
+          existingKey: null,
+          parentKey: g.existingKey || "__ROOT__",
+          parentName: g.name,
+          name: subName,
+          enabled: true,
+          items: subItems,
+        });
+      }
+      // Parent axis becomes the Level-1 container folder for its finely filtered Level-2 subthemes
+      g.items = [];
+    }
+
+    return result;
   }
 
   function findExistingLeafByName(leaves, name) {
@@ -1100,33 +1454,40 @@ var EixosClassifier = (function () {
       }
     }
 
-    const groups = applyNumberingToNewGroups(
-      Array.from(groupsMap.values())
-        .map((g) => {
-          delete g._seenIds;
-          return g;
-        })
-        .sort((a, b) => {
-          if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
-          if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
-          return b.items.length - a.items.length;
-        }),
-      targetTree
-    );
+    const baseGroups = Array.from(groupsMap.values())
+      .map((g) => {
+        delete g._seenIds;
+        return g;
+      })
+      .sort((a, b) => {
+        if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
+        if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
+        return b.items.length - a.items.length;
+      });
 
-    const newCount = groups.filter((g) => g.isNew).length;
-    const existCount = groups.length - newCount;
+    const subdivided = subdivideAxisGroupsOffline(baseGroups, targetTree, effectiveSettings);
+    const groups = applyNumberingToNewGroups(subdivided, targetTree);
+
+    const newAxesCount = groups.filter((g) => g.isNew && !g.isSubtheme).length;
+    const existCount = groups.filter((g) => !g.isNew).length;
+    const subCount = groups.filter((g) => g.isSubtheme).length;
+    const subExtra =
+      subCount > 0 ? tr("clsPlanSubPart", { count: subCount }, settings) : "";
     const reason =
       existCount > 0
         ? tr(
             "clsPlanOffExisting",
             {
               exist: existCount,
-              newPart: newCount > 0 ? tr("clsPlanOffNewPart", { count: newCount }, settings) : "",
+              newPart:
+                newAxesCount > 0
+                  ? tr("clsPlanOffNewPart", { count: newAxesCount }, settings) + subExtra
+                  : subExtra,
             },
             settings
           )
-        : tr("clsPlanOffInitial", { count: newCount, items: itemsMeta.length }, settings);
+        : tr("clsPlanOffInitial", { count: newAxesCount, items: itemsMeta.length }, settings) +
+          (subCount > 0 ? ` (${subCount} ${getActiveLocale(settings) === "en-US" ? "subthemes" : "subtemas"})` : "");
 
     return {
       engineUsed: "offline",
@@ -1146,13 +1507,15 @@ var EixosClassifier = (function () {
       ? customAxes.map((s) => String(s || "").trim()).filter(Boolean)
       : [];
 
-    // 1. Run fast offline keyword plan FIRST for cross-checking!
+    // 1. Run fast offline keyword plan FIRST for cross-checking (including 2-level subtheme hints)!
     const offlinePlan = buildBatchPlanOffline(itemsMeta, targetTree, settings, manualList);
     const offlineHintsByItem = new Map();
     for (const grp of offlinePlan.groups || []) {
+      const hintLabel =
+        grp.isSubtheme && grp.parentName ? `${grp.parentName} › ${grp.name}` : grp.name;
       for (const it of grp.items || []) {
         if (!offlineHintsByItem.has(it.id)) offlineHintsByItem.set(it.id, []);
-        offlineHintsByItem.get(it.id).push(grp.name);
+        offlineHintsByItem.get(it.id).push(hintLabel);
       }
     }
 
@@ -1164,6 +1527,8 @@ var EixosClassifier = (function () {
 
     const maxTargets = settings.maxTargets || 3;
     const allowNew = settings.allowCreateNew !== false;
+    const enableSubthemes = settings.enableSubthemes !== false && allowNew;
+    const subthemeMinItems = Math.max(2, Number(settings.subthemeMinItems) || 4);
 
     const compactItems = itemsMeta.map((it) => {
       const obj = {
@@ -1189,15 +1554,24 @@ var EixosClassifier = (function () {
       chunks.push(compactItems.slice(offset, offset + chunkSize));
     }
 
-    const offlineAxesSummary = (offlinePlan.groups || []).map((g) => g.name);
+    const offlineAxesSummary = (offlinePlan.groups || []).map((g) =>
+      g.isSubtheme && g.parentName ? `${g.parentName} › ${g.name}` : g.name
+    );
 
     const isEn = getActiveLocale(settings) === "en-US";
     const outputLangLabel = isEn ? "English" : "Portuguese (PT-BR)";
 
     const runChunk = async (chunk, sharedNewAxes) => {
+      const subthemeRule = enableSubthemes
+        ? `4. FINE-GRAINED 2-LEVEL SUBTHEMES: Whenever an axis receives ${subthemeMinItems} or more items, subdivide it into 2 to 4 specific numbered subthemes inside "subthemes" (e.g. "1.1 Feminist Theory", "1.2 Sexual Violence in Armed Conflicts") in ${outputLangLabel} and keep the parent axis's "item_ids": []. For axes with fewer than ${subthemeMinItems} items, keep "subthemes": [] and put items directly in "item_ids".\n` +
+          `5. Reply EXCLUSIVELY with valid JSON:\n` +
+          `{"axes":[{"existing_key":null,"name":"01 - Axis Name","item_ids":[],"subthemes":[{"existing_key":null,"name":"1.1 Subtheme Name","item_ids":[1,2]}]}],"summary":"Short summary in ${outputLangLabel}."}\n\n`
+        : `4. Reply EXCLUSIVELY with valid JSON:\n` +
+          `{"axes":[{"existing_key":null,"name":"01 - Axis Name","item_ids":[1,2]}],"summary":"Short summary in ${outputLangLabel}."}\n\n`;
+
       const prompt =
         `You are an expert academic librarian organizing a Zotero collection.\n` +
-        `Classify ALL ${chunk.length} items below (1 to ${maxTargets} axes per item) by cross-checking:\n` +
+        `Classify ALL ${chunk.length} items below (1 to ${maxTargets} themes per item) by cross-checking:\n` +
         `(a) full parent item metadata (title, authors, publisher, journal, series, DOI, ISBN, tags) + your bibliographic knowledge;\n` +
         `(b) the "kw_hint" field from local keyword analysis — confirm agreements and fix keyword false positives.\n\n` +
         `RULES:\n` +
@@ -1214,8 +1588,7 @@ var EixosClassifier = (function () {
             ? `You may propose new axes ("existing_key": null, "name": "01 - Axis Name" in ${outputLangLabel}, always starting with "01 - ", "02 - ", etc.), reusing already proposed names whenever appropriate.`
             : `Do NOT propose new axes; use only "existing_key".`
         }\n` +
-        `4. Reply EXCLUSIVELY with valid JSON:\n` +
-        `{"axes":[{"existing_key":null,"name":"01 - Axis Name","item_ids":[1,2]}],"summary":"Short summary in ${outputLangLabel}."}\n\n` +
+        subthemeRule +
         `EXISTING_FOLDERS:${JSON.stringify(existingLeaves)}\n` +
         `KEYWORD_AXES:${JSON.stringify(sharedNewAxes.length > 0 ? sharedNewAxes : offlineAxesSummary)}\n` +
         `ITEMS:${JSON.stringify(chunk)}`;
@@ -1242,7 +1615,6 @@ var EixosClassifier = (function () {
         .trim();
 
     const manualNormSet = new Set(manualList.map(normKey));
-    // Pre-register manual axes so they are always preserved even if 0 items match
     for (const mName of manualList) {
       const gid = `new:__ROOT__:${normKey(mName)}`;
       if (!groupsMap.has(gid)) {
@@ -1250,6 +1622,8 @@ var EixosClassifier = (function () {
           id: gid,
           isNew: true,
           isManual: true,
+          isSubtheme: false,
+          parentGroupId: null,
           existingKey: null,
           parentKey: "__ROOT__",
           parentName: null,
@@ -1261,68 +1635,139 @@ var EixosClassifier = (function () {
       }
     }
 
-    function addToGroup(gid, meta, item) {
+    function ensureGroupEntry(gid, meta) {
       if (!groupsMap.has(gid)) {
-        groupsMap.set(gid, Object.assign({ enabled: true, items: [], _seen: new Set() }, meta));
+        groupsMap.set(
+          gid,
+          Object.assign(
+            {
+              enabled: true,
+              isSubtheme: false,
+              parentGroupId: null,
+              items: [],
+              _seen: new Set(),
+            },
+            meta
+          )
+        );
       }
-      const g = groupsMap.get(gid);
-      if (!g._seen.has(item.id)) {
+      return groupsMap.get(gid);
+    }
+
+    function addToGroup(gid, meta, item) {
+      const g = ensureGroupEntry(gid, meta);
+      if (item && !g._seen.has(item.id)) {
         g._seen.add(item.id);
         g.items.push(item);
+        assignedIds.add(item.id);
       }
-      assignedIds.add(item.id);
+      return g;
     }
 
     function absorbParsed(parsed) {
       for (const ax of Array.isArray(parsed && parsed.axes) ? parsed.axes : []) {
-        if (!ax || !Array.isArray(ax.item_ids)) continue;
+        if (!ax) continue;
         const validLeaf = ax.existing_key && leafByKey.get(ax.existing_key);
-        for (const rawId of ax.item_ids) {
-          const item = itemById.get(Number(rawId));
-          if (!item) continue;
-          if (validLeaf) {
-            addToGroup(
-              `existing:${validLeaf.key}`,
-              {
-                id: `existing:${validLeaf.key}`,
-                isNew: false,
-                isManual: false,
-                existingKey: validLeaf.key,
-                parentKey: validLeaf.parentKey || "__ROOT__",
-                parentName: validLeaf.parentName || null,
-                name: validLeaf.name,
-              },
-              item
-            );
-          } else if (allowNew && ax.name && String(ax.name).trim()) {
-            const cleanName = String(ax.name).trim();
-            const n = normKey(cleanName);
-            addToGroup(
-              `new:__ROOT__:${n}`,
-              {
-                id: `new:__ROOT__:${n}`,
-                isNew: true,
-                isManual: manualNormSet.has(n),
-                existingKey: null,
-                parentKey: "__ROOT__",
-                parentName: null,
-                name: cleanName,
-              },
-              item
-            );
+        const directIds = Array.isArray(ax.item_ids) ? ax.item_ids : [];
+        const rawSubthemes = enableSubthemes && Array.isArray(ax.subthemes) ? ax.subthemes : [];
+
+        // Resolve or register Level-1 axis container first
+        let parentGroup = null;
+        if (validLeaf) {
+          parentGroup = ensureGroupEntry(`existing:${validLeaf.key}`, {
+            id: `existing:${validLeaf.key}`,
+            isNew: false,
+            isManual: false,
+            isSubtheme: Boolean(validLeaf.parentKey),
+            parentGroupId: null,
+            existingKey: validLeaf.key,
+            parentKey: validLeaf.parentKey || "__ROOT__",
+            parentName: validLeaf.parentName || null,
+            name: validLeaf.name,
+          });
+        } else if (allowNew && ax.name && String(ax.name).trim()) {
+          const cleanName = String(ax.name).trim();
+          const n = normKey(cleanName);
+          if (directIds.length > 0 || rawSubthemes.length > 0) {
+            parentGroup = ensureGroupEntry(`new:__ROOT__:${n}`, {
+              id: `new:__ROOT__:${n}`,
+              isNew: true,
+              isManual: manualNormSet.has(n),
+              isSubtheme: false,
+              parentGroupId: null,
+              existingKey: null,
+              parentKey: "__ROOT__",
+              parentName: null,
+              name: cleanName,
+            });
+          }
+        }
+
+        // Direct items on axis
+        if (parentGroup) {
+          for (const rawId of directIds) {
+            const item = itemById.get(Number(rawId));
+            if (item) addToGroup(parentGroup.id, parentGroup, item);
+          }
+        }
+
+        // Nested Level-2 subthemes inside this axis
+        if (parentGroup && rawSubthemes.length > 0) {
+          for (const sub of rawSubthemes) {
+            if (!sub || !Array.isArray(sub.item_ids) || sub.item_ids.length === 0) continue;
+            const validSubLeaf = sub.existing_key && leafByKey.get(sub.existing_key);
+            for (const rawId of sub.item_ids) {
+              const item = itemById.get(Number(rawId));
+              if (!item) continue;
+              if (validSubLeaf) {
+                addToGroup(
+                  `existing:${validSubLeaf.key}`,
+                  {
+                    id: `existing:${validSubLeaf.key}`,
+                    isNew: false,
+                    isManual: false,
+                    isSubtheme: true,
+                    parentGroupId: parentGroup.id,
+                    existingKey: validSubLeaf.key,
+                    parentKey: validSubLeaf.parentKey || parentGroup.existingKey || "__ROOT__",
+                    parentName: validSubLeaf.parentName || parentGroup.name,
+                    name: validSubLeaf.name,
+                  },
+                  item
+                );
+              } else if (sub.name && String(sub.name).trim()) {
+                const subClean = String(sub.name).trim();
+                const sn = normKey(subClean);
+                addToGroup(
+                  `sub:${parentGroup.id}:${sn}`,
+                  {
+                    id: `sub:${parentGroup.id}:${sn}`,
+                    isNew: true,
+                    isManual: false,
+                    isSubtheme: true,
+                    parentGroupId: parentGroup.id,
+                    existingKey: null,
+                    parentKey: parentGroup.existingKey || "__ROOT__",
+                    parentName: parentGroup.name,
+                    name: subClean,
+                  },
+                  item
+                );
+              }
+            }
           }
         }
       }
     }
 
-    // Run chunk 1 first to establish unified axis names, then remaining chunks in parallel (batches of 2) for speed!
+    // Run chunk 1 first to establish unified axis & subtheme names, then remaining chunks in parallel
     if (chunks.length > 0) {
       const firstParsed = await runChunk(chunks[0], manualList);
       absorbParsed(firstParsed);
 
       const establishedAxes = Array.from(groupsMap.values())
         .filter((g) => g.isNew)
-        .map((g) => g.name);
+        .map((g) => (g.isSubtheme && g.parentName ? `${g.parentName} › ${g.name}` : g.name));
 
       for (let i = 1; i < chunks.length; i += 2) {
         const pair = chunks.slice(i, i + 2);
@@ -1331,7 +1776,8 @@ var EixosClassifier = (function () {
       }
     }
 
-    // Reconcile any item omitted by AI using the offline keyword cross-check so 0 items get silently dropped
+    // Reconcile any item omitted by AI using the offline keyword cross-check (preserving 2-level subthemes!)
+    const offlineById = new Map((offlinePlan.groups || []).map((g) => [g.id, g]));
     let reconciledFromOffline = 0;
     for (const grp of offlinePlan.groups || []) {
       for (const it of grp.items || []) {
@@ -1345,6 +1791,8 @@ var EixosClassifier = (function () {
               id: `existing:${leaf.key}`,
               isNew: false,
               isManual: false,
+              isSubtheme: Boolean(leaf.parentKey),
+              parentGroupId: null,
               existingKey: leaf.key,
               parentKey: leaf.parentKey || "__ROOT__",
               parentName: leaf.parentName || null,
@@ -1353,38 +1801,95 @@ var EixosClassifier = (function () {
             it
           );
         } else if (allowNew) {
-          const n = normKey(grp.name);
-          addToGroup(
-            `new:__ROOT__:${n}`,
-            {
-              id: `new:__ROOT__:${n}`,
+          if (grp.isSubtheme && grp.parentGroupId && offlineById.has(grp.parentGroupId)) {
+            const pOff = offlineById.get(grp.parentGroupId);
+            const pn = normKey(pOff.name);
+            const pGrp = ensureGroupEntry(`new:__ROOT__:${pn}`, {
+              id: `new:__ROOT__:${pn}`,
               isNew: true,
-              isManual: manualNormSet.has(n),
+              isManual: manualNormSet.has(pn),
+              isSubtheme: false,
+              parentGroupId: null,
               existingKey: null,
               parentKey: "__ROOT__",
               parentName: null,
-              name: grp.name,
-            },
-            it
-          );
+              name: pOff.name,
+            });
+            const sn = normKey(grp.name);
+            addToGroup(
+              `sub:${pGrp.id}:${sn}`,
+              {
+                id: `sub:${pGrp.id}:${sn}`,
+                isNew: true,
+                isManual: false,
+                isSubtheme: true,
+                parentGroupId: pGrp.id,
+                existingKey: null,
+                parentKey: "__ROOT__",
+                parentName: pGrp.name,
+                name: grp.name,
+              },
+              it
+            );
+          } else {
+            const n = normKey(grp.name);
+            addToGroup(
+              `new:__ROOT__:${n}`,
+              {
+                id: `new:__ROOT__:${n}`,
+                isNew: true,
+                isManual: manualNormSet.has(n),
+                isSubtheme: false,
+                parentGroupId: null,
+                existingKey: null,
+                parentKey: "__ROOT__",
+                parentName: null,
+                name: grp.name,
+              },
+              it
+            );
+          }
         }
       }
     }
 
     const unassigned = itemsMeta.filter((it) => !assignedIds.has(it.id));
-    const groups = applyNumberingToNewGroups(
-      Array.from(groupsMap.values())
-        .map((g) => {
-          delete g._seen;
-          return g;
-        })
-        .sort((a, b) => {
-          if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
-          return b.items.length - a.items.length;
-        }),
-      targetTree
-    );
 
+    // Drop any empty non-manual root axes that have neither direct items nor child subthemes
+    const activeParentIds = new Set(
+      Array.from(groupsMap.values())
+        .filter((g) => g.isSubtheme && g.parentGroupId && g.items.length > 0)
+        .map((g) => g.parentGroupId)
+    );
+    const totalCountForRoot = (rootId) => {
+      let c = 0;
+      for (const x of groupsMap.values()) {
+        if (x.id === rootId || x.parentGroupId === rootId) c += x.items.length;
+      }
+      return c;
+    };
+
+    const rawGroups = Array.from(groupsMap.values())
+      .filter((g) => g.isManual || g.items.length > 0 || activeParentIds.has(g.id))
+      .map((g) => {
+        delete g._seen;
+        return g;
+      })
+      .sort((a, b) => {
+        if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
+        const ca = a.isSubtheme ? a.items.length : totalCountForRoot(a.id);
+        const cb = b.isSubtheme ? b.items.length : totalCountForRoot(b.id);
+        return cb - ca;
+      });
+
+    // Safety net: subdivide any large flat axis that AI left unsplit when fine-grained filtering is on
+    const subdivided = subdivideAxisGroupsOffline(rawGroups, targetTree, settings);
+    const groups = applyNumberingToNewGroups(subdivided, targetTree);
+
+    const rootAxesCount = groups.filter((g) => !g.isSubtheme).length;
+    const subthemesCount = groups.filter((g) => g.isSubtheme).length;
+    const subPart =
+      subthemesCount > 0 ? tr("clsPlanSubPart", { count: subthemesCount }, settings) : "";
     const extraNote =
       reconciledFromOffline > 0
         ? tr("clsPlanAIReconciled", { count: reconciledFromOffline }, settings)
@@ -1395,7 +1900,8 @@ var EixosClassifier = (function () {
         "clsPlanAI",
         {
           provider: settings.aiProvider,
-          axes: groups.length,
+          axes: rootAxesCount,
+          subPart,
           items: itemsMeta.length,
           extra: extraNote,
         },

@@ -221,6 +221,11 @@ var EixosPrefsPane = (function () {
       mode: $("eixos-mode").value,
       maxTargets: Math.max(1, Math.min(8, Number($("eixos-max-targets").value) || 3)),
       allowCreateNew: $("eixos-allow-create").checked,
+      enableSubthemes: $("eixos-enable-subthemes") ? $("eixos-enable-subthemes").checked : true,
+      subthemeMinItems: Math.max(
+        2,
+        Math.min(20, Number($("eixos-subtheme-min") && $("eixos-subtheme-min").value) || 4)
+      ),
       skipAlreadyClassified: $("eixos-skip-classified").checked,
       engine: $("eixos-engine").value,
       aiProvider: $("eixos-provider").value,
@@ -258,6 +263,12 @@ var EixosPrefsPane = (function () {
     $("eixos-mode").value = s.mode;
     $("eixos-max-targets").value = String(s.maxTargets);
     $("eixos-allow-create").checked = s.allowCreateNew;
+    if ($("eixos-enable-subthemes")) {
+      $("eixos-enable-subthemes").checked = s.enableSubthemes !== false;
+    }
+    if ($("eixos-subtheme-min")) {
+      $("eixos-subtheme-min").value = String(s.subthemeMinItems || 4);
+    }
     $("eixos-skip-classified").checked = s.skipAlreadyClassified;
     $("eixos-engine").value = s.engine;
     $("eixos-provider").value = s.aiProvider;
@@ -289,6 +300,8 @@ var EixosPrefsPane = (function () {
       "eixos-mode",
       "eixos-max-targets",
       "eixos-allow-create",
+      "eixos-enable-subthemes",
+      "eixos-subtheme-min",
       "eixos-skip-classified",
       "eixos-engine",
       "eixos-model",

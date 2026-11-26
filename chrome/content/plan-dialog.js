@@ -24,6 +24,7 @@
   let groupsState = [];
   const expandedGroups = new Set();
   const pickerOpenGroups = new Set();
+  const subFormOpenGroups = new Set();
   const allItems = Array.isArray(args.allItems) ? args.allItems : [];
   let isExecuting = false;
   let executionFinished = false;
@@ -71,6 +72,8 @@
       id: g.id,
       isNew: Boolean(g.isNew),
       isManual: Boolean(g.isManual),
+      isSubtheme: Boolean(g.isSubtheme),
+      parentGroupId: g.parentGroupId || null,
       existingKey: g.existingKey || null,
       parentKey: g.parentKey || "__ROOT__",
       parentName: g.parentName || null,
@@ -98,11 +101,32 @@
     $("plan-reason").textContent = (plan && plan.reason) || "";
   }
 
+  function getChildSubthemes(parentId) {
+    return groupsState.filter((g) => g.isSubtheme && g.parentGroupId === parentId);
+  }
+
   function getActiveGroups() {
-    // Manual new axes are allowed even with 0 items (creates empty index folder!)
-    return groupsState.filter(
-      (g) => g.enabled && g.name.trim() && (g.items.length > 0 || g.isManual)
-    );
+    const byId = new Map(groupsState.map((g) => [g.id, g]));
+    const activeSubsByParent = new Set();
+
+    for (const g of groupsState) {
+      if (!g.isSubtheme) continue;
+      const p = g.parentGroupId ? byId.get(g.parentGroupId) : null;
+      if (p && !p.enabled) continue;
+      if (g.enabled && g.name.trim() && (g.items.length > 0 || g.isManual)) {
+        if (g.parentGroupId) activeSubsByParent.add(g.parentGroupId);
+      }
+    }
+
+    return groupsState.filter((g) => {
+      if (!g.enabled || !g.name.trim()) return false;
+      if (g.isSubtheme) {
+        const p = g.parentGroupId ? byId.get(g.parentGroupId) : null;
+        if (p && !p.enabled) return false;
+        return g.items.length > 0 || g.isManual;
+      }
+      return g.items.length > 0 || g.isManual || activeSubsByParent.has(g.id);
+    });
   }
 
   function updateSummary() {
@@ -110,8 +134,12 @@
     const uniqueItemIds = new Set();
     let totalLinks = 0;
     let newFolders = 0;
+    let rootAxes = 0;
+    let subthemes = 0;
 
     for (const g of activeGroups) {
+      if (g.isSubtheme) subthemes++;
+      else rootAxes++;
       if (g.isNew) newFolders++;
       for (const it of g.items) {
         uniqueItemIds.add(it.id);
@@ -119,13 +147,16 @@
       }
     }
 
+    const subPart =
+      subthemes > 0 ? t("planSubthemeSummaryPart", { count: subthemes }) : "";
     const newPart =
       newFolders > 0 ? t("planSummaryNewPart", { count: newFolders }) : "";
 
     $("plan-summary").textContent =
       activeGroups.length > 0
         ? t("planSummaryFmt", {
-            axes: activeGroups.length,
+            axes: rootAxes,
+            subPart,
             items: uniqueItemIds.size,
             links: totalLinks,
             newPart,
@@ -146,6 +177,56 @@
           ? t("planBtnExecuteCount", { count: uniqueItemIds.size })
           : t("planBtnExecute");
     }
+  }
+
+  function formatNumberedSubthemeForParent(rawName, parentGroup) {
+    const clean = String(rawName || "").trim();
+    if (/^\d{1,2}\.\d{1,2}\s+/.test(clean)) return clean;
+    const pm = String((parentGroup && parentGroup.name) || "").trim().match(/^(\d{1,2})\s*[-–—]/);
+    const siblings = getChildSubthemes(parentGroup.id);
+    let maxSub = 0;
+    for (const s of siblings) {
+      const m = String(s.name || "").trim().match(/^(\d{1,2})\.(\d{1,2})\b/);
+      if (m) maxSub = Math.max(maxSub, parseInt(m[2], 10));
+    }
+    const nextSub = Math.max(maxSub, siblings.length) + 1;
+    return pm ? `${parseInt(pm[1], 10)}.${nextSub} ${clean}` : `${nextSub}. ${clean}`;
+  }
+
+  function addManualSubtheme(parentGroup, rawName) {
+    if (isExecuting || executionFinished) return;
+    const clean = String(rawName || "").trim();
+    if (!clean) return;
+    const name = formatNumberedSubthemeForParent(clean, parentGroup);
+    const id = `sub:${parentGroup.id}:${Date.now()}:${normalizeText(clean)}`;
+    const newSub = {
+      id,
+      isNew: true,
+      isManual: true,
+      isSubtheme: true,
+      parentGroupId: parentGroup.id,
+      existingKey: null,
+      parentKey: parentGroup.existingKey || "__ROOT__",
+      parentName: parentGroup.name,
+      name,
+      enabled: true,
+      items: [],
+    };
+    parentGroup.enabled = true;
+    // Insert right after parentGroup and its existing children
+    let insertIdx = groupsState.findIndex((x) => x.id === parentGroup.id) + 1;
+    while (
+      insertIdx < groupsState.length &&
+      groupsState[insertIdx].isSubtheme &&
+      groupsState[insertIdx].parentGroupId === parentGroup.id
+    ) {
+      insertIdx++;
+    }
+    groupsState.splice(insertIdx, 0, newSub);
+    subFormOpenGroups.delete(parentGroup.id);
+    pickerOpenGroups.add(id);
+    renderGroups($("plan-search").value);
+    updateSummary();
   }
 
   function getNextAxisNumber() {
@@ -193,6 +274,8 @@
       id,
       isNew: true,
       isManual: true,
+      isSubtheme: false,
+      parentGroupId: null,
       existingKey: null,
       parentKey: "__ROOT__",
       parentName: null,
@@ -231,15 +314,24 @@
 
     for (let i = 0; i < groupsState.length; i++) {
       const g = groupsState[i];
+      const childSubs = !g.isSubtheme ? getChildSubthemes(g.id) : [];
       const matchesGroup =
         !q ||
         normalizeText(g.name).includes(q) ||
         normalizeText(g.parentName).includes(q) ||
-        g.items.some((it) => normalizeText(it.title).includes(q));
+        g.items.some((it) => normalizeText(it.title).includes(q)) ||
+        childSubs.some(
+          (s) =>
+            normalizeText(s.name).includes(q) ||
+            s.items.some((it) => normalizeText(it.title).includes(q))
+        );
       if (!matchesGroup) continue;
 
       const card = document.createElement("div");
-      card.className = "plan-group-card" + (g.enabled ? "" : " plan-group-disabled");
+      card.className =
+        "plan-group-card" +
+        (g.isSubtheme ? " plan-group-subtheme" : "") +
+        (g.enabled ? "" : " plan-group-disabled");
 
       const head = document.createElement("div");
       head.className = "plan-group-head";
@@ -253,13 +345,24 @@
       cb.disabled = isExecuting || executionFinished;
       cb.addEventListener("change", () => {
         g.enabled = cb.checked;
-        card.className = "plan-group-card" + (g.enabled ? "" : " plan-group-disabled");
+        if (!g.isSubtheme) {
+          for (const sub of getChildSubthemes(g.id)) {
+            sub.enabled = cb.checked;
+          }
+          renderGroups($("plan-search").value);
+        } else {
+          card.className =
+            "plan-group-card plan-group-subtheme" + (g.enabled ? "" : " plan-group-disabled");
+        }
         updateSummary();
       });
       left.appendChild(cb);
 
       const tag = document.createElement("span");
-      if (g.isManual) {
+      if (g.isSubtheme) {
+        tag.className = "plan-badge plan-badge-subtheme";
+        tag.textContent = t("planBadgeSubtheme");
+      } else if (g.isManual) {
         tag.className = "plan-badge plan-badge-manual";
         tag.textContent = t("planBadgeManual");
       } else if (g.isNew) {
@@ -286,7 +389,7 @@
       } else {
         const titleSpan = document.createElement("span");
         titleSpan.className = "plan-group-name";
-        titleSpan.textContent = g.parentName ? `${g.parentName} › ${g.name}` : g.name;
+        titleSpan.textContent = g.parentName && !g.isSubtheme ? `${g.parentName} › ${g.name}` : g.name;
         left.appendChild(titleSpan);
       }
 
@@ -295,8 +398,29 @@
 
       const cnt = document.createElement("span");
       cnt.className = "plan-count";
-      cnt.textContent = t("planItemCount", { count: g.items.length });
+      if (!g.isSubtheme && childSubs.length > 0 && g.items.length === 0) {
+        const childUnique = new Set();
+        for (const s of childSubs) {
+          for (const it of s.items) childUnique.add(it.id);
+        }
+        cnt.textContent = t("planItemCount", { count: childUnique.size });
+      } else {
+        cnt.textContent = t("planItemCount", { count: g.items.length });
+      }
       right.appendChild(cnt);
+
+      if (!isExecuting && !executionFinished && !g.isSubtheme) {
+        const addSubBtn = document.createElement("button");
+        addSubBtn.type = "button";
+        addSubBtn.className = "plan-btn plan-btn-sm";
+        addSubBtn.textContent = t("planBtnAddSubtheme");
+        addSubBtn.addEventListener("click", () => {
+          if (subFormOpenGroups.has(g.id)) subFormOpenGroups.delete(g.id);
+          else subFormOpenGroups.add(g.id);
+          renderGroups($("plan-search").value);
+        });
+        right.appendChild(addSubBtn);
+      }
 
       if (!isExecuting && !executionFinished && allItems.length > 0) {
         const assignBtn = document.createElement("button");
@@ -314,20 +438,46 @@
       }
 
       const isExpanded = expandedGroups.has(g.id);
-      const toggleBtn = document.createElement("button");
-      toggleBtn.type = "button";
-      toggleBtn.className = "plan-btn plan-btn-sm";
-      toggleBtn.textContent = isExpanded ? t("planBtnHideItems") : t("planBtnViewItems");
-      toggleBtn.addEventListener("click", () => {
-        if (expandedGroups.has(g.id)) expandedGroups.delete(g.id);
-        else expandedGroups.add(g.id);
-        renderGroups($("plan-search").value);
-      });
-      right.appendChild(toggleBtn);
+      if (g.items.length > 0 || childSubs.length === 0) {
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "plan-btn plan-btn-sm";
+        toggleBtn.textContent = isExpanded ? t("planBtnHideItems") : t("planBtnViewItems");
+        toggleBtn.addEventListener("click", () => {
+          if (expandedGroups.has(g.id)) expandedGroups.delete(g.id);
+          else expandedGroups.add(g.id);
+          renderGroups($("plan-search").value);
+        });
+        right.appendChild(toggleBtn);
+      }
 
       head.appendChild(left);
       head.appendChild(right);
       card.appendChild(head);
+
+      // Inline "+ Subtheme" form for Level-1 axes
+      if (subFormOpenGroups.has(g.id) && !isExecuting && !executionFinished) {
+        const subForm = document.createElement("div");
+        subForm.className = "plan-sub-form";
+        const subInp = document.createElement("input");
+        subInp.type = "text";
+        subInp.className = "plan-sub-input";
+        subInp.placeholder = t("planSubthemePlaceholder");
+        const subOk = document.createElement("button");
+        subOk.type = "button";
+        subOk.className = "plan-btn plan-btn-sm plan-btn-primary";
+        subOk.textContent = t("planBtnConfirmSubtheme");
+        subOk.addEventListener("click", () => addManualSubtheme(g, subInp.value));
+        subInp.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            addManualSubtheme(g, subInp.value);
+          }
+        });
+        subForm.appendChild(subInp);
+        subForm.appendChild(subOk);
+        card.appendChild(subForm);
+      }
 
       if (pickerOpenGroups.has(g.id) && !isExecuting && !executionFinished) {
         const pickerWrap = document.createElement("div");
@@ -446,6 +596,7 @@
       const fresh = await args.replan(forceEngine, manualNames);
       expandedGroups.clear();
       pickerOpenGroups.clear();
+      subFormOpenGroups.clear();
       applyPlan(fresh);
       renderGroups($("plan-search").value);
       updateSummary();
@@ -460,8 +611,11 @@
 
   function buildExecutionPayload() {
     const selectedGroups = getActiveGroups().map((g) => ({
+      id: g.id,
       isNew: g.isNew,
       isManual: g.isManual,
+      isSubtheme: Boolean(g.isSubtheme),
+      parentGroupId: g.parentGroupId || null,
       existingKey: g.existingKey,
       parentKey: g.parentKey,
       name: g.name.trim(),

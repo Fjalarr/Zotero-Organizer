@@ -43,6 +43,9 @@ var EixosI18n = (function () {
       prefBatchHint:
         "Ao organizar uma coleção inteira (botão direito → Organizar por Eixo e Tema), o plugin sempre mostra primeiro o plano completo em uma única tela para você revisar e executar de uma vez.",
       prefCheckAllowCreate: "Permitir sugerir/criar novas subcoleções quando surgir um tema novo",
+      prefCheckEnableSubthemes:
+        "Filtragem fina em 2 níveis: criar subtemas numerados dentro de cada eixo (ex.: 1.1, 1.2) quando houver itens suficientes",
+      prefLabelSubthemeMin: "Mínimo de itens no eixo para subdividir em subtemas:",
       prefCheckSkipClassified:
         "Não mexer em itens que eu já coloquei diretamente em algum eixo/tema da subcoleção",
 
@@ -115,6 +118,7 @@ var EixosI18n = (function () {
       planBadgeExisting: "Existente",
       planBadgeNewSub: "Nova subcoleção",
       planBadgeNewFolder: "Nova pasta",
+      planBadgeSubtheme: "Subtema",
       planBadgeManual: "Manual",
       planBadgeAI: "IA + Palavras-chave ({provider})",
       planBadgeOffline: "Modo Offline",
@@ -130,6 +134,10 @@ var EixosI18n = (function () {
         "Nenhum eixo ainda. Use a caixa acima para criar um índice manualmente ou clique em Reanalisar.",
       planItemCount: "{count} item(ns)",
       planBtnAssign: "+ Atribuir itens",
+      planBtnAddSubtheme: "+ Subtema",
+      planSubthemePlaceholder: "Nome do novo subtema (ex.: Violência Sexual em Conflitos)…",
+      planBtnConfirmSubtheme: "Criar",
+      planSubthemeSummaryPart: " • {count} subtema(s)",
       planBtnCloseAssign: "Fechar seleção",
       planBtnViewItems: "Ver itens ▾",
       planBtnHideItems: "Ocultar ▴",
@@ -142,7 +150,7 @@ var EixosI18n = (function () {
       planReanalyzingAI: "Analisando coleção com IA + cruzamento por palavras-chave… aguarde.",
       planReanalyzingOff: "Recalculando plano offline…",
       planReanalyzeErr: "Erro ao reanalisar: {err}",
-      planSummaryFmt: "{axes} eixo(s) • {items} item(ns) único(s) ({links} vínculo(s)){newPart} — nada será apagado",
+      planSummaryFmt: "{axes} eixo(s){subPart} • {items} item(ns) único(s) ({links} vínculo(s)){newPart} — nada será apagado",
       planSummaryNewPart: " • {count} nova(s) pasta(s)",
       planSummaryNone: "Nenhum eixo selecionado",
       planBtnCancel: "Cancelar",
@@ -254,9 +262,11 @@ var EixosI18n = (function () {
       clsPlanOffInitial:
         "Plano inicial gerado em Modo Offline: {count} eixo(s) temático(s) sugerido(s) para {items} item(ns).",
       clsPlanAI:
-        "Cruzamento IA ({provider}) + palavras-chave: {axes} eixo(s) para {items} item(ns){extra}.",
+        "Cruzamento IA ({provider}) + palavras-chave: {axes} eixo(s){subPart} para {items} item(ns){extra}.",
+      clsPlanSubPart: " e {count} subtema(s)",
       clsPlanAIReconciled: " (+ {count} completado(s) via palavras-chave)",
       generalAxisName: "Geral e Outros Temas",
+      generalSubthemeName: "Outros Estudos e Perspectivas",
     },
 
     "en-US": {
@@ -300,6 +310,9 @@ var EixosI18n = (function () {
       prefBatchHint:
         "When organizing an entire collection (right-click → Organize by Axis & Theme), the plugin always shows a complete single-screen plan for you to review before executing.",
       prefCheckAllowCreate: "Allow suggesting/creating new subcollections when a new topic appears",
+      prefCheckEnableSubthemes:
+        "Fine-grained 2-level filtering: create numbered subthemes inside each axis (e.g. 1.1, 1.2) when enough items match",
+      prefLabelSubthemeMin: "Min items in an axis before subdividing into subthemes:",
       prefCheckSkipClassified:
         "Do not touch items I already placed directly inside a thematic axis/subcollection",
 
@@ -372,6 +385,7 @@ var EixosI18n = (function () {
       planBadgeExisting: "Existing",
       planBadgeNewSub: "New subcollection",
       planBadgeNewFolder: "New folder",
+      planBadgeSubtheme: "Subtheme",
       planBadgeManual: "Manual",
       planBadgeAI: "AI + Keywords ({provider})",
       planBadgeOffline: "Offline Mode",
@@ -387,6 +401,10 @@ var EixosI18n = (function () {
         "No axes yet. Use the box above to create a manual index or click Re-analyze.",
       planItemCount: "{count} item(s)",
       planBtnAssign: "+ Assign items",
+      planBtnAddSubtheme: "+ Subtheme",
+      planSubthemePlaceholder: "New subtheme name (e.g. Sexual Violence in Armed Conflicts)…",
+      planBtnConfirmSubtheme: "Create",
+      planSubthemeSummaryPart: " • {count} subtheme(s)",
       planBtnCloseAssign: "Close picker",
       planBtnViewItems: "View items ▾",
       planBtnHideItems: "Hide ▴",
@@ -399,7 +417,7 @@ var EixosI18n = (function () {
       planReanalyzingAI: "Analyzing collection with AI + keyword cross-check… please wait.",
       planReanalyzingOff: "Recalculating offline plan…",
       planReanalyzeErr: "Error re-analyzing: {err}",
-      planSummaryFmt: "{axes} axis/axes • {items} unique item(s) ({links} link(s)){newPart} — nothing will be deleted",
+      planSummaryFmt: "{axes} axis/axes{subPart} • {items} unique item(s) ({links} link(s)){newPart} — nothing will be deleted",
       planSummaryNewPart: " • {count} new folder(s)",
       planSummaryNone: "No axis selected",
       planBtnCancel: "Cancel",
@@ -511,9 +529,11 @@ var EixosI18n = (function () {
       clsPlanOffInitial:
         "Initial plan built in Offline Mode: {count} thematic axis/axes suggested for {items} item(s).",
       clsPlanAI:
-        "AI ({provider}) + keyword cross-check: {axes} axis/axes for {items} item(s){extra}.",
+        "AI ({provider}) + keyword cross-check: {axes} axis/axes{subPart} for {items} item(s){extra}.",
+      clsPlanSubPart: " and {count} subtheme(s)",
       clsPlanAIReconciled: " (+ {count} reconciled via keywords)",
       generalAxisName: "General & Other Topics",
+      generalSubthemeName: "General & Other Perspectives",
     },
   };
 

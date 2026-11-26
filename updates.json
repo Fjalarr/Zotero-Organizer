@@ -3,9 +3,9 @@
     "eixos-organizer@danielbarreto.local": {
       "updates": [
         {
-          "version": "1.5.1",
-          "update_link": "https://github.com/Fjalarr/Zotero-Organizer/releases/download/v1.5.1/organizer-v1.5.1.xpi",
-          "update_hash": "sha256:50bca5ae0b89a98f613078a1203e035eb6a332c9317aea1bd4ea1c2927cfecaf",
+          "version": "1.6.0",
+          "update_link": "https://github.com/Fjalarr/Zotero-Organizer/releases/download/v1.6.0/organizer-v1.6.0.xpi",
+          "update_hash": "sha256:6b5271f1c1e2330649d5b4938142dd642f8179165e10d759e37301185a242822",
           "applications": {
             "zotero": {
               "strict_min_version": "7.0",
