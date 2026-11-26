@@ -1,4 +1,8 @@
-**[English](README.md) | [Português (Brasil)](README.pt-BR.md)**
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/README-English-2563eb?style=for-the-badge" alt="README (EN)" /></a>
+  <a href="README.pt-BR.md"><img src="https://img.shields.io/badge/README-Portugu%C3%AAs%20(PT--BR)-16a34a?style=for-the-badge" alt="README (PT-BR)" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-475569?style=for-the-badge" alt="MIT License" /></a>
+</p>
 
 # Organizer — Zotero Plugin (Zotero 7 / 8 / 10)
 
