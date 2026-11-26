@@ -211,18 +211,29 @@ var EixosMain = (function () {
     return { status: "unchanged" };
   }
 
+  let activePlanWindow = null;
+
   function openPlanDialog(dialogArgs) {
     const win = getActiveWindow();
     if (!win) return null;
 
-    win.openDialog(
+    if (activePlanWindow && !activePlanWindow.closed) {
+      try {
+        activePlanWindow.close();
+      } catch (e) {}
+    }
+
+    // IMPORTANT: Must NOT be `modal`! A modal openDialog blocks Zotero's main window
+    // event loop and deadlocks Zotero.Collection.saveTx() / Zotero.Item.saveTx()
+    // when executing directly from inside the open dialog.
+    activePlanWindow = win.openDialog(
       "chrome://eixos-organizer/content/plan-dialog.xhtml",
       "eixos-organizer-plan-dialog",
-      "chrome,dialog,modal,centerscreen,resizable,width=820,height=740",
+      "chrome,dialog,centerscreen,resizable,width=840,height=740",
       dialogArgs
     );
 
-    return dialogArgs.result;
+    return activePlanWindow;
   }
 
   async function ensureRuleRegistered(libID, sourceCol, targetCol) {
@@ -426,12 +437,18 @@ var EixosMain = (function () {
       await ensureRuleRegistered(libID, col, targetRootCol);
 
       // Create/resolve all approved axis subcollections (including empty manual indices!)
-      reportProgress(25, `Criando/validando ${payload.groups.length} eixo(s)…`);
+      const totalGroups = (payload.groups || []).length;
+      reportProgress(18, `Criando/validando ${totalGroups} eixo(s)…`);
       const itemToColIDs = new Map();
       const colNameByID = new Map();
       const createdAxisNames = [];
 
-      for (const grp of payload.groups || []) {
+      for (let gIdx = 0; gIdx < totalGroups; gIdx++) {
+        const grp = payload.groups[gIdx];
+        reportProgress(
+          18 + Math.round(((gIdx + 1) / Math.max(1, totalGroups)) * 12),
+          `Preparando eixo ${gIdx + 1}/${totalGroups}: ${grp.name}`
+        );
         let axisCol = null;
         if (!grp.isNew && grp.existingKey) {
           axisCol = Zotero.Collections.getByLibraryAndKey(libID, grp.existingKey);
@@ -451,6 +468,9 @@ var EixosMain = (function () {
         for (const itemID of grp.itemIds || []) {
           if (!itemToColIDs.has(itemID)) itemToColIDs.set(itemID, new Set());
           itemToColIDs.get(itemID).add(axisCol.id);
+        }
+        if (Zotero.Promise && typeof Zotero.Promise.delay === "function") {
+          await Zotero.Promise.delay(10);
         }
       }
 
@@ -477,9 +497,12 @@ var EixosMain = (function () {
             await item.saveTx();
             linkedItems++;
           }
-          if (entries.length > 0 && (idx % 5 === 0 || idx === entries.length - 1)) {
+          if (entries.length > 0 && (idx % 3 === 0 || idx === entries.length - 1)) {
             const pct = basePct + Math.round(((idx + 1) / entries.length) * spanPct);
             reportProgress(pct, `Indexando itens (${idx + 1}/${entries.length})…`);
+            if (Zotero.Promise && typeof Zotero.Promise.delay === "function") {
+              await Zotero.Promise.delay(5);
+            }
           }
         }
         return { linkedItems, totalLinks };

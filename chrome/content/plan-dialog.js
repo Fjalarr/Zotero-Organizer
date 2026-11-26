@@ -367,53 +367,27 @@
             li.className = "plan-item-row";
 
             const txt = document.createElement("span");
+            txt.className = "plan-item-text";
             const authorPart =
               it.creators && it.creators.length > 0 ? `${it.creators[0]} — ` : "";
             const yearPart = it.year ? ` (${it.year})` : "";
-            txt.textContent = `${authorPart}${it.title}${yearPart}`;
+            const fullLine = `${authorPart}${it.title}${yearPart}`;
+            txt.textContent = fullLine;
+            txt.title = fullLine;
             li.appendChild(txt);
 
             if (!isExecuting && !executionFinished) {
-              const actions = document.createElement("span");
-              actions.className = "plan-item-actions";
-
-              const copySel = document.createElement("select");
-              copySel.className = "plan-item-copy";
-              copySel.title = "Copiar este item também para outro eixo";
-              const ph = document.createElement("option");
-              ph.value = "";
-              ph.textContent = "+ Eixo…";
-              copySel.appendChild(ph);
-              for (const other of groupsState) {
-                if (other.id === g.id || !other.name.trim()) continue;
-                const opt = document.createElement("option");
-                opt.value = other.id;
-                opt.textContent = other.name.slice(0, 38);
-                copySel.appendChild(opt);
-              }
-              copySel.addEventListener("change", () => {
-                const targetG = groupsState.find((x) => x.id === copySel.value);
-                if (targetG) {
-                  addItemToGroup(targetG, it);
-                  renderGroups($("plan-search").value);
-                  updateSummary();
-                }
-                copySel.value = "";
-              });
-              actions.appendChild(copySel);
-
               const rmBtn = document.createElement("button");
               rmBtn.type = "button";
               rmBtn.className = "plan-item-rm";
               rmBtn.textContent = "×";
-              rmBtn.title = "Retirar deste eixo no plano";
+              rmBtn.title = "Retirar deste eixo no plano (use '+ Atribuir itens' em outro eixo para incluir lá)";
               rmBtn.addEventListener("click", () => {
                 removeItemFromGroup(g, it.id);
                 renderGroups($("plan-search").value);
                 updateSummary();
               });
-              actions.appendChild(rmBtn);
-              li.appendChild(actions);
+              li.appendChild(rmBtn);
             }
 
             list.appendChild(li);

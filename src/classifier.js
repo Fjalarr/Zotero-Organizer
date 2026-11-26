@@ -255,21 +255,25 @@ var EixosClassifier = (function () {
       const m = String(e.name || "").trim().match(/^(\d{1,2})\s*[-–—]/);
       if (m) usedNums.add(parseInt(m[1], 10));
     }
+    // Always renumber newly proposed root axes cleanly & sequentially with no gaps (01, 02, 03...)
+    // while preserving explicit numbers on manually-created axes if user typed them.
     for (const g of groups) {
       if (!g.isNew) continue;
       if (!g.parentKey || g.parentKey === "__ROOT__") {
-        const m = String(g.name || "").trim().match(/^(\d{1,2})\s*[-–—]\s*(.+)$/);
-        if (m) {
-          const num = parseInt(m[1], 10);
-          g.name = `${pad2(num)} - ${m[2].trim()}`;
-          usedNums.add(num);
-          if (num >= nextNum) nextNum = num + 1;
-        } else {
-          while (usedNums.has(nextNum)) nextNum++;
-          g.name = `${pad2(nextNum)} - ${String(g.name || "").trim()}`;
-          usedNums.add(nextNum);
-          nextNum++;
+        if (g.isManual) {
+          const m = String(g.name || "").trim().match(/^(\d{1,2})\s*[-–—]\s*(.+)$/);
+          if (m) {
+            const num = parseInt(m[1], 10);
+            g.name = `${pad2(num)} - ${m[2].trim()}`;
+            usedNums.add(num);
+            continue;
+          }
         }
+        const base = stripNumericPrefix(g.name) || String(g.name || "").trim();
+        while (usedNums.has(nextNum)) nextNum++;
+        g.name = `${pad2(nextNum)} - ${base}`;
+        usedNums.add(nextNum);
+        nextNum++;
       }
     }
     return groups;
