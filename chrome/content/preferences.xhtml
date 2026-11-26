@@ -112,8 +112,9 @@
 
       <html:div class="eixos-grid-2">
         <html:div class="eixos-field">
-          <html:label for="eixos-apikey" data-i18n="prefLabelApiKey">API Key (stored locally on this computer only):</html:label>
+          <html:label for="eixos-apikey" data-i18n="prefLabelApiKey">API Key (encrypted locally on this computer — never synced or committed):</html:label>
           <html:input id="eixos-apikey" type="password" data-i18n-placeholder="prefPlaceholderApiKey" placeholder="Paste your API key (e.g. AIza... or sk-...)" />
+          <html:div id="eixos-key-enc-status" class="eixos-help"></html:div>
         </html:div>
         <html:div class="eixos-field">
           <html:label for="eixos-model" data-i18n="prefLabelModel">Model:</html:label>
@@ -128,6 +129,7 @@
 
       <html:div class="eixos-btn-row">
         <html:button id="eixos-btn-test-ai" type="button" class="eixos-btn" data-i18n="prefBtnTestAI">Test AI Connection</html:button>
+        <html:button id="eixos-btn-clear-key" type="button" class="eixos-btn eixos-btn-danger" data-i18n="prefBtnClearKey">Clear Key</html:button>
         <html:span id="eixos-ai-status" class="eixos-status"></html:span>
       </html:div>
     </html:section>

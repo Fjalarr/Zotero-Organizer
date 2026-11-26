@@ -1,8 +1,12 @@
-**[English](README.md) | [Português (Brasil)](README.pt-BR.md)**
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/README-English-2563eb?style=for-the-badge" alt="README (EN)" /></a>
+  <a href="README.pt-BR.md"><img src="https://img.shields.io/badge/README-Portugu%C3%AAs%20(PT--BR)-16a34a?style=for-the-badge" alt="README (PT-BR)" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-475569?style=for-the-badge" alt="MIT License" /></a>
+</p>
 
 # Organizer — Zotero Plugin (Zotero 7 / 8 / 10)
 
-> **v1.5.0 — First Stable Public Release**
+> **v1.5.1 — Stable Public Release (Encrypted Local API Key Vault)**
 
 A **100% non-destructive** Zotero plugin that automatically organizes books, articles, theses, and PDFs into **numbered thematic subcollections by Axis & Theme** — powered by a **Hybrid Engine (AI + local keyword cross-check + offline fallback)**, a **single-screen interactive Plan Preview with live Zotero database verification**, **full English / Portuguese (PT-BR) language switching**, and optional **team rule sync via Zotero Sync / WebDAV**.
 
@@ -44,7 +48,7 @@ When you maintain general collections in Zotero (such as `Books`, `Articles & Th
 - **Zero deletions:** the plugin **never** deletes items, attachments, notes, or collections.
 - **Original folder untouched:** linking an item to thematic axes **never removes** it from its source collection (`Books`, `Articles`, etc.).
 - **No duplicate files:** Zotero collections work like smart labels/playlists. Linking one PDF to 2 or 3 thematic axes **never duplicates** the file on disk or on WebDAV.
-- **API keys stay strictly local:** AI API keys (Gemini, OpenAI, etc.) are stored exclusively in your local Zotero preferences and are **never** written to synced library notes or exported to JSON.
+- **Encrypted local API key vault:** AI API keys (Gemini, OpenAI, etc.) are **never** stored in plaintext in `prefs.js`, **never** committed to Git, **never** exported to JSON, **never** written to synced library notes, and **never** passed in URL query strings or printed in error logs. Keys are encrypted locally using Zotero/Gecko's native **NSS Secret Decoder Ring (`key4.db`)** with an automatic **WebCrypto AES-256-GCM** fallback. Legacy plaintext keys from `v1.0`–`v1.5.0` are migrated and wiped automatically on first startup.
 
 ---
 
@@ -52,10 +56,10 @@ When you maintain general collections in Zotero (such as `Books`, `Articles & Th
 
 Compatible with **Zotero 7, 8, and 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Download **`organizer-v1.5.0.xpi`** from [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) or from [`dist/organizer-v1.5.0.xpi`](dist/organizer-v1.5.0.xpi).
+1. Download **`organizer-v1.5.1.xpi`** from [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) or from [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
 2. In Zotero, open **Tools → Plugins** (*Ferramentas → Plugins*).
 3. Click the **gear icon** in the top-right corner and choose **Install Plugin From File…** (*Instalar plugin a partir de arquivo…*).
-4. Select **`organizer-v1.5.0.xpi`**.
+4. Select **`organizer-v1.5.1.xpi`**.
 
 The plugin activates immediately without restarting Zotero. Users upgrading from `Eixos Organizer v1.x` keep all existing managed-folder rules, settings, and API keys automatically.
 
@@ -144,7 +148,8 @@ zotero-eixos-organizer/
 ├── bootstrap.js                      # Plugin lifecycle (startup / shutdown / registerChrome)
 ├── src/
 │   ├── i18n.js                       # Full runtime EN / PT-BR localization engine
-│   ├── config.js                     # Local prefs, synced note, auto-discovery & JSON I/O
+│   ├── crypto.js                     # Encrypted local API key vault (NSS key4.db + AES-256-GCM) & log sanitizer
+│   ├── config.js                     # Local prefs, encrypted key migration, synced note & JSON I/O
 │   ├── organizer.js                  # Non-destructive tree reader, parent resolver & DB verifier
 │   ├── classifier.js                 # Hybrid AI + keyword cross-check + offline TF-IDF engine
 │   └── main.js                       # Real-time observer, retry queue, menus & plan controller
@@ -160,7 +165,7 @@ zotero-eixos-organizer/
 ├── README.md                         # English documentation
 ├── README.pt-BR.md                   # Portuguese (Brazil) documentation
 └── dist/
-    └── organizer-v1.5.0.xpi          # Current stable build ready for Zotero installation
+    └── organizer-v1.5.1.xpi          # Current stable build ready for Zotero installation
 ```
 
 > **Note on `dist/`:** Starting with `v1.5.0`, `dist/` keeps only the latest stable `.xpi` package to keep the repository lightweight. All historical `.xpi` builds (`v1.0.0` – `v1.4.2`) remain archived and downloadable in [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases).
@@ -178,9 +183,15 @@ python build.py
 
 Quick syntax check for all scripts:
 
+### Branching & Release Workflow
+
+- **`dev` (Development branch):** all new features, bug fixes, and community Pull Requests **must target `dev` first**.
+- **`main` (Protected Release branch):** updated exclusively via Pull Request from **`dev` → `main`** after maintainer review and approval, ensuring every public release is verified before distribution.
+
 ```powershell
 node --check bootstrap.js
 node --check src/i18n.js
+node --check src/crypto.js
 node --check src/config.js
 node --check src/organizer.js
 node --check src/classifier.js
@@ -198,7 +209,8 @@ Every release is tracked via Git tags and [GitHub Releases](https://github.com/F
 
 | Version | Date | Release / Commit | Package `.xpi` | Summary |
 |---|---|---|---|---|
-| **`v1.5.0`** *(stable)* | 2026-11-26 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) | `dist/organizer-v1.5.0.xpi` | **First stable public release**: renamed to **Organizer**, full live **English / Portuguese (PT-BR)** language switcher in Settings (UI, dialogs, notifications, offline seeds & AI prompts), bilingual `README.md` + `README.pt-BR.md`, and clean `dist/` keeping only the current build |
+| **`v1.5.1`** *(stable)* | 2026-11-26 | [`v1.5.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Encrypted local API key vault**: encrypts AI API keys locally via Zotero/Gecko **NSS (`key4.db`)** with **AES-256-GCM** fallback, auto-migrates & wipes legacy plaintext prefs, moves Gemini API key to `x-goog-api-key` HTTP header, sanitizes secrets from error logs, adds **Clear Key** button & vault badge, strengthens `.gitignore`, and establishes the **`dev` → PR → `main`** workflow |
+| **`v1.5.0`** | 2026-11-26 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **First stable public release**: renamed to **Organizer**, full live **English / Portuguese (PT-BR)** language switcher in Settings (UI, dialogs, notifications, offline seeds & AI prompts), bilingual `README.md` + `README.pt-BR.md`, and clean `dist/` keeping only the current build |
 | **`v1.4.2`** | 2026-11-26 | [`v1.4.2`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Fixed modal `saveTx()` deadlock during plan execution (switched `plan-dialog` to non-modal with live progress), fixed Gecko `<select>` text overlap in expanded item lists, and eliminated numbering gaps |
 | **`v1.4.1`** | 2026-11-26 | [`v1.4.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Standardized sequential numbering (`01 - Topic`, `02 - Topic`, and `N.M Subtopic`) across offline, AI, and manual plan axes with prefix-aware deduplication |
 | **`v1.4.0`** | 2026-11-26 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Hybrid AI + keyword cross-check, full parent-item metadata resolution (DOI/ISBN/publisher/series), faster Gemini calls (`thinkingConfig` + parallel chunks), reliable retry delivery, manual indices inside Plan Preview, and live Zotero DB verification before closing |
@@ -209,7 +221,14 @@ Every release is tracked via Git tags and [GitHub Releases](https://github.com/F
 
 ### Detailed Release Notes
 
-#### `v1.5.0` — `organizer-v1.5.0.xpi` *(current stable)*
+#### `v1.5.1` — `organizer-v1.5.1.xpi` *(current stable)*
+- **Encrypted Local API Key Storage (`src/crypto.js`):** API keys are now encrypted before saving using Zotero/Gecko's native **NSS Secret Decoder Ring (`key4.db`)** with an automatic **WebCrypto AES-256-GCM** fallback (using a separate 256-bit local profile key outside `prefs.js`).
+- **Automatic Plaintext Migration & Wipe:** any API key saved in plaintext by `v1.0`–`v1.5.0` is transparently encrypted and wiped from `extensions.eixosOrganizer.aiApiKey` on startup.
+- **Zero Key Leakage in HTTP / Logs:** Gemini requests now send the API key via the official `x-goog-api-key` header (instead of `?key=` in the URL), and all HTTP errors pass through `sanitizeErrorText()` so keys/tokens never appear in error messages or Zotero debug logs.
+- **Settings Vault UX:** added an encryption status indicator (`🔒 Stored encrypted locally`) and a one-click **Clear Key** button in **Settings → Organizer**.
+- **Repository Governance & Security:** hardened `.gitignore` against secret/key files, added `.github/pull_request_template.md`, created the `dev` development branch, and enforced the **`dev` → Pull Request → approval → `main`** release flow.
+
+#### `v1.5.0` *(archived in GitHub Releases)*
 - **Project renamed to Organizer:** unified branding across manifest, Settings tab, dialogs, notifications, menus, and `.xpi` filename (`organizer-v1.5.0.xpi`), while keeping the internal add-on ID (`eixos-organizer@danielbarreto.local`) and preference prefix intact for seamless in-place upgrades from `v1.x`.
 - **Full English & Portuguese (PT-BR) support:** new `src/i18n.js` engine and **Language / Idioma** selector at the top of **Settings → Organizer** (`Auto`, `English`, `Português (Brasil)`). Switching language updates the Settings pane live without restarting Zotero and adapts all dialogs, notifications, default root naming (`<Folder> - By Axis & Theme` vs. `<Pasta> - Por Eixo e Tema`), offline topic seeds, and AI output language.
 - **Bilingual documentation:** added complete English [`README.md`](README.md) and Brazilian Portuguese [`README.pt-BR.md`](README.pt-BR.md) with full release traceability.

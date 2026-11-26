@@ -1,8 +1,12 @@
-**[English](README.md) | [Português (Brasil)](README.pt-BR.md)**
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/README-English-2563eb?style=for-the-badge" alt="README (EN)" /></a>
+  <a href="README.pt-BR.md"><img src="https://img.shields.io/badge/README-Portugu%C3%AAs%20(PT--BR)-16a34a?style=for-the-badge" alt="README (PT-BR)" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-475569?style=for-the-badge" alt="MIT License" /></a>
+</p>
 
 # Organizer — Plugin para Zotero (Zotero 7 / 8 / 10)
 
-> **v1.5.0 — Primeira Versão Estável para o Público Geral**
+> **v1.5.1 — Versão Estável Pública (Cofre Criptografado para Chave de API)**
 
 Plugin **100% não-destrutivo** para o Zotero que organiza automaticamente livros, artigos, teses e PDFs em **subcoleções numeradas por Eixo e Tema** — com motor **híbrido (cruzamento IA + palavras-chave + fallback offline)**, **tela única de revisão do plano com verificação real no banco do Zotero**, **seletor completo de idioma (Português / Inglês)** nas configurações e **compartilhamento opcional de regras via Zotero Sync / WebDAV**.
 
@@ -44,7 +48,7 @@ Quando você mantém coleções gerais no Zotero (por exemplo, `Livros`, `Artigo
 - **Zero exclusões:** o plugin **nunca** apaga itens, anexos, notas ou coleções.
 - **Pasta original intacta:** vincular um livro a eixos temáticos **nunca remove** o item da coleção de origem (`Livros`, `Artigos e Teses`, etc.).
 - **Sem duplicação de arquivos:** no Zotero, coleções funcionam como marcadores/playlists. Vincular um PDF a 2 ou 3 temas **nunca duplica** o arquivo no disco nem no WebDAV.
-- **Chaves de API sempre locais:** chaves de IA (Gemini, OpenAI, etc.) ficam gravadas exclusivamente nas preferências locais do seu computador e **nunca** são enviadas para a nota sincronizada da biblioteca nem para exportações JSON.
+- **Chave de API criptografada localmente:** chaves de IA (Gemini, OpenAI, etc.) **nunca** ficam em texto puro no `prefs.js`, **nunca** sobem para o Git, **nunca** são exportadas para JSON, **nunca** vão para a nota sincronizada da biblioteca e **nunca** trafegam na URL nem aparecem em logs de erro. A chave é criptografada localmente usando o cofre nativo **NSS Secret Decoder Ring (`key4.db`)** do Zotero/Gecko, com fallback automático para **WebCrypto AES-256-GCM**. Chaves salvas em versões anteriores (`v1.0`–`v1.5.0`) são migradas para o cofre criptografado e apagadas em texto puro automaticamente na inicialização.
 
 ---
 
@@ -52,10 +56,10 @@ Quando você mantém coleções gerais no Zotero (por exemplo, `Livros`, `Artigo
 
 Compatível com **Zotero 7, 8 e 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Baixe **`organizer-v1.5.0.xpi`** em [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) ou na pasta [`dist/organizer-v1.5.0.xpi`](dist/organizer-v1.5.0.xpi).
+1. Baixe **`organizer-v1.5.1.xpi`** em [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) ou na pasta [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
 2. No Zotero, abra **Ferramentas → Plugins** (*Tools → Plugins*).
 3. Clique no ícone de **engrenagem** no canto superior direito e escolha **Instalar plugin a partir de arquivo…** (*Install Plugin From File…*).
-4. Selecione o arquivo **`organizer-v1.5.0.xpi`**.
+4. Selecione o arquivo **`organizer-v1.5.1.xpi`**.
 
 O plugin entra em operação imediatamente (sem precisar reiniciar o Zotero). Quem já usava o `Eixos Organizer v1.x` mantém automaticamente todas as regras, preferências e chaves de API configuradas.
 
@@ -144,7 +148,8 @@ zotero-eixos-organizer/
 ├── bootstrap.js                      # Ciclo de vida do plugin (startup / shutdown / registerChrome)
 ├── src/
 │   ├── i18n.js                       # Motor de internacionalização PT-BR / EN em tempo real
-│   ├── config.js                     # Preferências locais, nota sincronizada, auto-detecção e JSON
+│   ├── crypto.js                     # Cofre criptografado local (NSS key4.db + AES-256-GCM) e sanitização de logs
+│   ├── config.js                     # Preferências locais, migração criptografada, nota sincronizada e JSON
 │   ├── organizer.js                  # Árvore não-destrutiva, resolução do item pai e verificação DB
 │   ├── classifier.js                 # Motor híbrido (cruzamento IA + palavras-chave + TF-IDF)
 │   └── main.js                       # Observer em tempo real, fila com retentativa, menus e planos
@@ -160,7 +165,7 @@ zotero-eixos-organizer/
 ├── README.md                         # Documentação em Inglês
 ├── README.pt-BR.md                   # Documentação em Português (Brasil)
 └── dist/
-    └── organizer-v1.5.0.xpi          # Build estável atual pronta para instalação no Zotero
+    └── organizer-v1.5.1.xpi          # Build estável atual pronta para instalação no Zotero
 ```
 
 > **Nota sobre `dist/`:** a partir da `v1.5.0`, a pasta `dist/` mantém apenas o pacote `.xpi` da versão atual para manter o repositório enxuto. Todas as builds antigas (`v1.0.0` – `v1.4.2`) continuam arquivadas e disponíveis para download em [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases).
@@ -178,9 +183,15 @@ python build.py
 
 Validação rápida de sintaxe de todos os scripts:
 
+### Fluxo de Branches e Releases
+
+- **`dev` (Branch de desenvolvimento):** todas as alterações, correções e Pull Requests **devem ir primeiro para `dev`**.
+- **`main` (Branch protegida de produção):** só recebe código via Pull Request de **`dev` → `main`** após revisão e aprovação do mantenedor, garantindo que cada release pública esteja validada.
+
 ```powershell
 node --check bootstrap.js
 node --check src/i18n.js
+node --check src/crypto.js
 node --check src/config.js
 node --check src/organizer.js
 node --check src/classifier.js
@@ -198,7 +209,8 @@ Todas as versões possuem rastreio completo por commit, tag Git e [GitHub Releas
 
 | Versão | Data | Release / Commit | Pacote `.xpi` | Resumo da evolução |
 |---|---|---|---|---|
-| **`v1.5.0`** *(estável)* | 26/11/2026 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) | `dist/organizer-v1.5.0.xpi` | **Primeira versão estável pública**: renomeado para **Organizer**, seletor de idioma **Português (Brasil) / English / Automático** nas configurações (interface, janelas, notificações, vocabulário offline e IA), documentação bilíngue (`README.md` + `README.pt-BR.md`) e `dist/` enxuta apenas com a build atual |
+| **`v1.5.1`** *(estável)* | 26/11/2026 | [`v1.5.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Cofre criptografado local para Chave de API**: criptografia local via **NSS (`key4.db`)** do Zotero/Gecko com fallback **AES-256-GCM**, migração e limpeza automática da preferência legada em texto puro, envio da chave Gemini no header `x-goog-api-key`, sanitização de segredos em logs de erro, botão **Limpar Chave**, `.gitignore` reforçado e fluxo **`dev` → PR → `main`** |
+| **`v1.5.0`** | 26/11/2026 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **Primeira versão estável pública**: renomeado para **Organizer**, seletor de idioma **Português (Brasil) / English / Automático** nas configurações (interface, janelas, notificações, vocabulário offline e IA), documentação bilíngue (`README.md` + `README.pt-BR.md`) e `dist/` enxuta apenas com a build atual |
 | **`v1.4.2`** | 26/11/2026 | [`v1.4.2`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Correção do deadlock modal na execução do plano (`openDialog` não-modal + progresso ao vivo), correção visual de textos sobrepostos na lista de itens e numeração sequencial sem lacunas |
 | **`v1.4.1`** | 26/11/2026 | [`v1.4.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Numeração automática padronizada (`01 - Tema`, `02 - Tema` e `N.M Subtema`) em eixos gerados offline, pela IA ou criados manualmente no plano |
 | **`v1.4.0`** | 26/11/2026 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Cruzamento IA + palavras-chave, metadados completos do item pai (DOI/ISBN/editora/série), API mais rápida (`thinkingConfig` + chunks paralelos), entrega garantida com retentativa, criação manual de índices no plano e verificação real no banco antes de fechar a janela |
@@ -209,7 +221,14 @@ Todas as versões possuem rastreio completo por commit, tag Git e [GitHub Releas
 
 ### Detalhes de cada versão
 
-#### `v1.5.0` — `organizer-v1.5.0.xpi` *(estável atual)*
+#### `v1.5.1` — `organizer-v1.5.1.xpi` *(estável atual)*
+- **Armazenamento criptografado da Chave de API (`src/crypto.js`):** chaves de API agora são criptografadas antes de serem gravadas no computador usando o cofre nativo **NSS Secret Decoder Ring (`key4.db`)** do Zotero/Gecko, com fallback automático para **WebCrypto AES-256-GCM** (chave aleatória de 256 bits isolada em arquivo próprio no perfil do Zotero, fora do `prefs.js`).
+- **Migração e remoção automática de texto puro:** qualquer chave salva nas versões `v1.0`–`v1.5.0` é criptografada automaticamente e removida da preferência legada `extensions.eixosOrganizer.aiApiKey` assim que o plugin inicia.
+- **Zero vazamento em URL ou logs:** chamadas ao Gemini passam a enviar a chave no cabeçalho oficial `x-goog-api-key` (em vez de `?key=` na URL), e todos os erros passam por `sanitizeErrorText()` para nunca expor chaves ou tokens em notificações ou logs do Zotero.
+- **Indicador de cofre e botão Limpar Chave:** a aba **Editar → Configurações → Organizer** mostra o status de criptografia local (`🔒 Salva criptografada localmente`) e inclui o botão **Limpar Chave** para remover a chave do cofre com 1 clique.
+- **Segurança de repositório e governança:** `.gitignore` reforçado contra arquivos de chaves/segredos, template de PR (`.github/pull_request_template.md`), criação da branch `dev` e fluxo **`dev` → Pull Request → aprovação → `main`**.
+
+#### `v1.5.0` *(arquivada no GitHub Releases)*
 - **Projeto renomeado para Organizer:** identidade unificada no manifesto, aba de Configurações, janelas, notificações, menus e pacote `.xpi` (`organizer-v1.5.0.xpi`), mantendo o identificador interno (`eixos-organizer@danielbarreto.local`) para atualização direta sem perda de regras ou configurações das versões `1.x`.
 - **Suporte completo a Português (Brasil) e Inglês:** novo módulo `src/i18n.js` e seletor **Idioma / Language** no topo de **Editar → Configurações → Organizer** (`Automático`, `Português (Brasil)` ou `English`). A troca altera a tela de configurações ao vivo (sem reiniciar o Zotero) e adapta janelas, notificações, nome padrão da subcoleção destino (`<Pasta> - Por Eixo e Tema` vs. `<Folder> - By Axis & Theme`), vocabulário offline e idioma das respostas da IA.
 - **Documentação bilíngue:** criação do [`README.md`](README.md) completo em inglês e do [`README.pt-BR.md`](README.pt-BR.md) em português com rastreio de todas as versões.

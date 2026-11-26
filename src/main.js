@@ -104,7 +104,7 @@ var EixosMain = (function () {
       batchTotal: batchInfo ? batchInfo.total : 1,
       allowCreateNew: Boolean(settings.allowCreateNew && rule.allowCreateNew !== false),
       reclassify: async (forceEngine) => {
-        const latestSettings = EixosConfig.getSettings();
+        const latestSettings = await EixosConfig.getSettingsAsync();
         return EixosClassifier.classifyItem(itemMeta, targetTree, latestSettings, forceEngine);
       },
       result: null,
@@ -122,7 +122,7 @@ var EixosMain = (function () {
 
   async function processSingleItem(rawItem, rule, options) {
     const opts = options || {};
-    const settings = EixosConfig.getSettings();
+    const settings = await EixosConfig.getSettingsAsync();
     const libID = rule.libraryID || (rawItem && rawItem.libraryID) || Zotero.Libraries.userLibraryID;
 
     if (!rawItem || rawItem.deleted) return { status: "skipped" };
@@ -291,7 +291,7 @@ var EixosMain = (function () {
     }
 
     const libID = col.libraryID || Zotero.Libraries.userLibraryID;
-    const settings = EixosConfig.getSettings();
+    const settings = await EixosConfig.getSettingsAsync();
 
     // Prevent accidentally running organization on a destination thematic root itself
     const isTargetRoot = settings.rules.some(
@@ -559,7 +559,7 @@ var EixosMain = (function () {
       allItems: itemsMeta,
       plan,
       replan: async (forceEngine, manualAxes) => {
-        const latest = EixosConfig.getSettings();
+        const latest = await EixosConfig.getSettingsAsync();
         return EixosClassifier.buildBatchPlan(itemsMeta, targetTree, latest, forceEngine, manualAxes);
       },
       executePlan: executePlanInDialog,

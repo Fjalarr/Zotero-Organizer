@@ -1,17 +1,22 @@
-/* global Zotero */
+/* global Zotero, EixosCrypto */
 
 var EixosConfig = (function () {
   const PREF_PREFIX = "extensions.eixosOrganizer.";
   const SYNC_NOTE_TAG = "_eixos_organizer_config";
-  const SYNC_NOTE_TITLE = "[Eixos Organizer] Configuração Sincronizada (não apagar)";
+  const SYNC_NOTE_TITLE = "[Organizer] Configuração Sincronizada (não apagar)";
   const CONFIG_SCHEMA_VERSION = 1;
+
+  // Private in-memory cache of the decrypted API key (never exported, synced, or logged)
+  let cachedApiKey = "";
+  let apiKeyHydrated = false;
 
   const DEFAULTS = {
     language: "auto", // "auto" | "pt-BR" | "en-US"
     mode: "auto", // "auto" | "interactive"
     engine: "hybrid", // "hybrid" | "ai" | "offline"
     aiProvider: "gemini", // "gemini" | "openai" | "custom"
-    aiApiKey: "",
+    aiApiKey: "", // Legacy plaintext pref (auto-migrated & wiped on startup)
+    aiApiKeyEnc: "", // Encrypted local-only ciphertext (NSS SDR or AES-256-GCM)
     aiModel: "gemini-3.5-flash",
     aiEndpoint: "http://localhost:11434/v1/chat/completions",
     allowCreateNew: true,
@@ -37,6 +42,95 @@ var EixosConfig = (function () {
     Zotero.Prefs.set(PREF_PREFIX + key, value, true);
   }
 
+  function clearPref(key) {
+    try {
+      Zotero.Prefs.set(PREF_PREFIX + key, "", true);
+    } catch (e) {}
+    try {
+      if (typeof Zotero.Prefs.clear === "function") {
+        Zotero.Prefs.clear(PREF_PREFIX + key, true);
+      }
+    } catch (e) {}
+  }
+
+  function getApiKeyStorageMethod() {
+    const enc = String(getPref("aiApiKeyEnc") || "").trim();
+    if (!enc) return "none";
+    if (typeof EixosCrypto !== "undefined" && typeof EixosCrypto.detectStorageMethod === "function") {
+      return EixosCrypto.detectStorageMethod(enc);
+    }
+    return "unknown";
+  }
+
+  /**
+   * Hydrates the in-memory decrypted API key from encrypted local storage.
+   * Automatically migrates and wipes any legacy plaintext `aiApiKey` preference.
+   */
+  async function ensureApiKeyLoaded() {
+    const legacyPlain = String(getPref("aiApiKey") || "").trim();
+    const enc = String(getPref("aiApiKeyEnc") || "").trim();
+
+    if (legacyPlain) {
+      try {
+        if (!enc) {
+          const res = await EixosCrypto.encryptSecret(legacyPlain);
+          setPref("aiApiKeyEnc", res.encoded);
+          cachedApiKey = legacyPlain;
+        }
+      } catch (e) {
+        Zotero.debug("EixosConfig: failed to migrate legacy API key.");
+      } finally {
+        clearPref("aiApiKey");
+      }
+    }
+
+    const latestEnc = String(getPref("aiApiKeyEnc") || "").trim();
+    if (latestEnc && typeof EixosCrypto !== "undefined") {
+      cachedApiKey = await EixosCrypto.decryptSecret(latestEnc);
+    } else if (!legacyPlain) {
+      cachedApiKey = "";
+    }
+    apiKeyHydrated = true;
+    return cachedApiKey;
+  }
+
+  async function saveApiKey(rawKey) {
+    const clean = String(rawKey || "").trim();
+    // Always wipe any legacy plaintext preference immediately
+    clearPref("aiApiKey");
+
+    if (!clean) {
+      clearPref("aiApiKeyEnc");
+      cachedApiKey = "";
+      apiKeyHydrated = true;
+      return { method: "none" };
+    }
+
+    const res = await EixosCrypto.encryptSecret(clean);
+    setPref("aiApiKeyEnc", res.encoded);
+    cachedApiKey = clean;
+    apiKeyHydrated = true;
+    return { method: res.method };
+  }
+
+  async function clearApiKey() {
+    return saveApiKey("");
+  }
+
+  function readCachedOrSyncApiKey() {
+    if (apiKeyHydrated) return cachedApiKey;
+    const enc = String(getPref("aiApiKeyEnc") || "").trim();
+    if (enc && typeof EixosCrypto !== "undefined" && typeof EixosCrypto.decryptSyncIfSupported === "function") {
+      const dec = EixosCrypto.decryptSyncIfSupported(enc);
+      if (dec) {
+        cachedApiKey = dec;
+        apiKeyHydrated = true;
+        return cachedApiKey;
+      }
+    }
+    return cachedApiKey;
+  }
+
   function getSettings() {
     let rules = [];
     try {
@@ -50,7 +144,8 @@ var EixosConfig = (function () {
       mode: getPref("mode") || "auto",
       engine: getPref("engine") || "hybrid",
       aiProvider: getPref("aiProvider") || "gemini",
-      aiApiKey: String(getPref("aiApiKey") || "").trim(),
+      aiApiKey: readCachedOrSyncApiKey(),
+      aiApiKeyMethod: getApiKeyStorageMethod(),
       aiModel: String(getPref("aiModel") || "").trim(),
       aiEndpoint: String(getPref("aiEndpoint") || DEFAULTS.aiEndpoint).trim(),
       allowCreateNew: Boolean(getPref("allowCreateNew")),
@@ -61,13 +156,18 @@ var EixosConfig = (function () {
     };
   }
 
+  async function getSettingsAsync() {
+    await ensureApiKeyLoaded();
+    return getSettings();
+  }
+
   function saveLocalSettings(partial) {
+    // Note: aiApiKey is intentionally EXCLUDED here; it MUST be saved via saveApiKey() (encrypted)
     const allowed = [
       "language",
       "mode",
       "engine",
       "aiProvider",
-      "aiApiKey",
       "aiModel",
       "aiEndpoint",
       "allowCreateNew",
@@ -300,6 +400,7 @@ var EixosConfig = (function () {
   }
 
   async function initAndSyncConfig() {
+    await ensureApiKeyLoaded();
     const settings = getSettings();
     const libID = Zotero.Libraries.userLibraryID;
 
@@ -409,7 +510,13 @@ var EixosConfig = (function () {
     DEFAULTS,
     getPref,
     setPref,
+    clearPref,
+    ensureApiKeyLoaded,
+    saveApiKey,
+    clearApiKey,
+    getApiKeyStorageMethod,
     getSettings,
+    getSettingsAsync,
     saveLocalSettings,
     normalizeRules,
     saveRulesToSyncNote,
