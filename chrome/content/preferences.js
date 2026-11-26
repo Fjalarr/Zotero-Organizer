@@ -38,7 +38,7 @@ var EixosPrefsPane = (function () {
 
     const autoOpt = document.createElementNS("http://www.w3.org/1999/xhtml", "option");
     autoOpt.value = "__AUTO__";
-    autoOpt.textContent = 'Automático: usar existente ou criar "Por Eixo e Tema" dentro da pasta';
+    autoOpt.textContent = 'Automático: usar existente ou criar "<Pasta> - Por Eixo e Tema" dentro da pasta';
     tgtSel.appendChild(autoOpt);
 
     for (const c of collectionsCache) {
@@ -276,8 +276,7 @@ var EixosPrefsPane = (function () {
           } else {
             const created = await api().organizer.ensureTargetRootInsideSource(
               libID,
-              sourceKey,
-              "Por Eixo e Tema"
+              sourceKey
             );
             targetRootKey = created.key;
             collectionsCache = await api().organizer.listAllCollections(libID);

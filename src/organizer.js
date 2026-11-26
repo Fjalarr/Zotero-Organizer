@@ -318,7 +318,8 @@ var EixosOrganizer = (function () {
     if (!sourceCol) {
       throw new Error(`Coleção de origem não encontrada (key=${sourceKey}).`);
     }
-    const name = String(customName || "Por Eixo e Tema").trim() || "Por Eixo e Tema";
+    const defaultName = `${sourceCol.name} - Por Eixo e Tema`;
+    const name = String(customName || defaultName).trim() || defaultName;
     return getOrCreateSubcollection(libID, sourceCol.id, name);
   }
 

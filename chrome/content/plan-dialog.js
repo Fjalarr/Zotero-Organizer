@@ -233,7 +233,7 @@
       $("plan-dest-existing").style.display = "none";
       const inp = $("plan-dest-input");
       inp.style.display = "inline-block";
-      inp.value = args.defaultNewRootName || "Por Eixo e Tema";
+      inp.value = args.defaultNewRootName || `${args.sourceName} - Por Eixo e Tema`;
       const b = $("plan-dest-badge");
       b.textContent = "Nova subcoleção";
       b.className = "plan-badge plan-badge-new";
@@ -277,7 +277,10 @@
           name: g.name.trim(),
           itemIds: g.items.map((it) => it.id),
         }));
-      const newRootName = $("plan-dest-input").value.trim() || "Por Eixo e Tema";
+      const newRootName =
+        $("plan-dest-input").value.trim() ||
+        args.defaultNewRootName ||
+        `${args.sourceName} - Por Eixo e Tema`;
       args.result = {
         confirmed: true,
         newRootName,

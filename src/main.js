@@ -349,11 +349,12 @@ var EixosMain = (function () {
     }
 
     // 4. Open ONE review dialog for the entire collection
+    const defaultNewRootName = `${col.name} - Por Eixo e Tema`;
     const dialogResult = openPlanDialog({
       sourceName: col.name,
       totalPending: itemsMeta.length,
       existingTarget,
-      defaultNewRootName: "Por Eixo e Tema",
+      defaultNewRootName,
       plan,
       replan: async (forceEngine) => {
         const latest = EixosConfig.getSettings();
@@ -376,7 +377,7 @@ var EixosMain = (function () {
         targetRootCol = await EixosOrganizer.ensureTargetRootInsideSource(
           libID,
           col.key,
-          dialogResult.newRootName || "Por Eixo e Tema"
+          dialogResult.newRootName || defaultNewRootName
         );
       }
 
