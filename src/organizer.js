@@ -166,6 +166,25 @@ var EixosOrganizer = (function () {
     };
   }
 
+  /**
+   * If `item` is a child attachment or child note, resolves and returns its parent item.
+   * Otherwise returns `item` as-is.
+   */
+  async function resolveParentItem(item) {
+    if (!item || item.deleted) return null;
+    if (item.parentItemID) {
+      try {
+        const parent = await Zotero.Items.getAsync(item.parentItemID);
+        if (parent && !parent.deleted) {
+          return parent;
+        }
+      } catch (e) {
+        Zotero.debug("EixosOrganizer.resolveParentItem error: " + e);
+      }
+    }
+    return item;
+  }
+
   function getItemMetadata(item) {
     if (!item) return null;
     const isRegular = typeof item.isRegularItem === "function" && item.isRegularItem();
@@ -191,7 +210,7 @@ var EixosOrganizer = (function () {
     const safeField = (name) => {
       if (!isRegular) return "";
       try {
-        return item.getField(name) || "";
+        return String(item.getField(name) || "").trim();
       } catch (e) {
         return "";
       }
@@ -205,6 +224,23 @@ var EixosOrganizer = (function () {
             .filter((t) => t && !t.startsWith("_"))
         : [];
 
+    let attachmentNames = [];
+    if (isRegular && typeof item.getAttachments === "function") {
+      try {
+        const attIDs = item.getAttachments() || [];
+        for (const aid of attIDs.slice(0, 3)) {
+          const att = Zotero.Items.get(aid);
+          if (att) {
+            const fname =
+              (typeof att.attachmentFilename === "string" && att.attachmentFilename) ||
+              (typeof att.getField === "function" && att.getField("title")) ||
+              "";
+            if (fname) attachmentNames.push(String(fname).trim());
+          }
+        }
+      } catch (e) {}
+    }
+
     const dateStr = safeField("date");
     const yearMatch = String(dateStr).match(/\b(1[5-9]\d{2}|20\d{2})\b/);
 
@@ -216,13 +252,114 @@ var EixosOrganizer = (function () {
       isRegular,
       isAttachment,
       title: String(title).replace(/<\/?i>/gi, "").trim(),
+      shortTitle: safeField("shortTitle"),
       creators,
       year: yearMatch ? yearMatch[1] : "",
       abstractNote: safeField("abstractNote").slice(0, 1200),
-      publicationTitle: safeField("publicationTitle") || safeField("bookTitle") || "",
-      publisher: safeField("publisher") || safeField("university") || "",
-      language: safeField("language") || "",
+      publicationTitle:
+        safeField("publicationTitle") ||
+        safeField("bookTitle") ||
+        safeField("proceedingsTitle") ||
+        safeField("encyclopediaTitle") ||
+        safeField("websiteTitle") ||
+        "",
+      publisher: safeField("publisher") || safeField("university") || safeField("institution") || "",
+      place: safeField("place"),
+      series: safeField("series") || safeField("seriesTitle"),
+      volume: safeField("volume"),
+      edition: safeField("edition"),
+      thesisType: safeField("thesisType"),
+      DOI: safeField("DOI"),
+      ISBN: safeField("ISBN"),
+      ISSN: safeField("ISSN"),
+      url: safeField("url"),
+      extra: safeField("extra").slice(0, 300),
+      language: safeField("language"),
       tags,
+      attachmentNames,
+    };
+  }
+
+  /**
+   * Verifies directly against Zotero's collectionItems table that every planned
+   * (itemID -> collectionIDs) link was genuinely indexed in Zotero.
+   *
+   * @param {number} libraryID
+   * @param {Map<number, Set<number>>} expectedItemToColIDs
+   * @param {Map<number, string>} colNameByID
+   * @param {Map<number, string>} itemTitleByID
+   */
+  async function verifyItemsIndexed(libraryID, expectedItemToColIDs, colNameByID, itemTitleByID) {
+    const itemIDs = Array.from(expectedItemToColIDs.keys());
+    let totalPlannedLinks = 0;
+    for (const s of expectedItemToColIDs.values()) totalPlannedLinks += s.size;
+
+    if (itemIDs.length === 0) {
+      return {
+        totalPlannedItems: 0,
+        verifiedItems: 0,
+        totalPlannedLinks: 0,
+        verifiedLinks: 0,
+        missing: [],
+      };
+    }
+
+    // Query actual persisted links in Zotero DB in chunks of 200 IDs
+    const actualByItem = new Map();
+    const chunkSize = 200;
+    for (let i = 0; i < itemIDs.length; i += chunkSize) {
+      const slice = itemIDs.slice(i, i + chunkSize);
+      const placeholders = slice.map(() => "?").join(",");
+      const rows = await Zotero.DB.queryAsync(
+        `SELECT ci.itemID, ci.collectionID
+         FROM collectionItems ci
+         JOIN collections c ON c.collectionID = ci.collectionID
+         WHERE c.libraryID = ?
+           AND ci.itemID IN (${placeholders})`,
+        [libraryID].concat(slice)
+      );
+      for (const r of rows || []) {
+        if (!actualByItem.has(r.itemID)) actualByItem.set(r.itemID, new Set());
+        actualByItem.get(r.itemID).add(r.collectionID);
+      }
+    }
+
+    let verifiedItems = 0;
+    let verifiedLinks = 0;
+    const missing = [];
+
+    for (const [itemID, expectedCols] of expectedItemToColIDs.entries()) {
+      const actualCols = actualByItem.get(itemID) || new Set();
+      const missingColIDs = [];
+      const missingColNames = [];
+
+      for (const cid of expectedCols) {
+        if (actualCols.has(cid)) {
+          verifiedLinks++;
+        } else {
+          missingColIDs.push(cid);
+          missingColNames.push((colNameByID && colNameByID.get(cid)) || `ID:${cid}`);
+        }
+      }
+
+      if (missingColIDs.length === 0) {
+        verifiedItems++;
+      } else {
+        missing.push({
+          itemID,
+          title: (itemTitleByID && itemTitleByID.get(itemID)) || `Item #${itemID}`,
+          missingColIDs,
+          missingColNames,
+        });
+      }
+    }
+
+    return {
+      totalPlannedItems: itemIDs.length,
+      verifiedItems,
+      totalPlannedLinks,
+      verifiedLinks,
+      missing,
     };
   }
 
@@ -459,12 +596,14 @@ var EixosOrganizer = (function () {
   return {
     listAllCollections,
     getTargetTree,
+    resolveParentItem,
     getItemMetadata,
     isItemAlreadyInTargetTree,
     findExistingTargetForSource,
     ensureTargetRootInsideSource,
     getOrCreateSubcollection,
     applyClassification,
+    verifyItemsIndexed,
     getPendingItemsInSource,
     getPendingItemsForPlanning,
   };

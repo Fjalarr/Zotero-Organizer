@@ -44,10 +44,10 @@ Quando você mantém coleções gerais no Zotero (por exemplo, `Livros` ou `Arti
 
 Compatível com **Zotero 7, 8 e 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Baixe o arquivo da versão mais recente em **Releases** ou na pasta `dist/` deste repositório (ex.: `dist/zotero-eixos-organizer-v1.3.0.xpi`).
+1. Baixe o arquivo da versão mais recente em **Releases** ou na pasta `dist/` deste repositório (ex.: `dist/zotero-eixos-organizer-v1.4.0.xpi`).
 2. No Zotero, abra **Ferramentas → Plugins** (*Tools → Plugins*).
 3. Clique no ícone de **engrenagem** no canto superior direito e escolha **Instalar plugin a partir de arquivo…** (*Install Plugin From File…*).
-4. Selecione o arquivo `.xpi` da versão desejada (ex.: `zotero-eixos-organizer-v1.3.0.xpi`).
+4. Selecione o arquivo `.xpi` da versão desejada (ex.: `zotero-eixos-organizer-v1.4.0.xpi`).
 
 O plugin entra em operação imediatamente (sem precisar reiniciar o Zotero).
 
@@ -96,7 +96,7 @@ Use o botão **Testar Conexão com IA** para validar a configuração antes de c
 
 Para que outras pessoas que usam o mesmo Zotero/WebDAV aproveitem a mesma automação:
 
-1. Envie o arquivo `.xpi` da versão atual (ex.: `zotero-eixos-organizer-v1.3.0.xpi`) para a pessoa instalar no Zotero dela.
+1. Envie o arquivo `.xpi` da versão atual (ex.: `zotero-eixos-organizer-v1.4.0.xpi`) para a pessoa instalar no Zotero dela.
 2. As subcoleções criadas, os vínculos dos livros/artigos e os arquivos PDF/EPUB já são sincronizados **nativamente** pelo Zotero Sync / WebDAV.
 3. Opcionalmente, o plugin também pode sincronizar apenas a **lista de pastas monitoradas** em uma nota interna da biblioteca (tag `_eixos_organizer_config`, título `[Eixos Organizer] Configuração Sincronizada (não apagar)`), para que outros computadores herdem regras personalizadas automaticamente (sem nunca salvar chaves de API).
 4. Para evitar reclassificações após o sync entre computadores, a opção **Ignorar itens que já estejam vinculados a algum eixo/tema da árvore destino** vem ativada por padrão.
@@ -144,7 +144,8 @@ zotero-eixos-organizer/
     ├── zotero-eixos-organizer-v1.0.0.xpi # Build histórica v1.0.0 (arquivada)
     ├── zotero-eixos-organizer-v1.1.0.xpi # Build histórica v1.1.0 (arquivada)
     ├── zotero-eixos-organizer-v1.2.0.xpi # Build histórica v1.2.0 (arquivada)
-    └── zotero-eixos-organizer-v1.3.0.xpi # Build atual v1.3.0 pronta para instalação no Zotero
+    ├── zotero-eixos-organizer-v1.3.0.xpi # Build histórica v1.3.0 (arquivada)
+    └── zotero-eixos-organizer-v1.4.0.xpi # Build atual v1.4.0 pronta para instalação no Zotero
 ```
 
 ---
@@ -178,12 +179,21 @@ Todas as builds `.xpi` geradas ficam preservadas em `dist/` com o número da ver
 
 | Versão | Data | Tag / Commit | Build `.xpi` | Resumo da evolução |
 |---|---|---|---|---|
-| **`v1.3.0`** *(atual)* | 26/11/2026 | [`v1.3.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.3.0) | `dist/zotero-eixos-organizer-v1.3.0.xpi` | Plano completo em 1 única tela antes de executar, criação/reuso automático de subcoleção temática sem pasta vazia manual, tempo real automático com notificação e respeito à organização manual |
+| **`v1.4.0`** *(atual)* | 26/11/2026 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) | `dist/zotero-eixos-organizer-v1.4.0.xpi` | Cruzamento IA + palavras-chave, metadados completos do item pai (DOI/ISBN/editora/série), API mais rápida (`thinkingConfig` + chunks paralelos), entrega garantida com retentativa, criação manual de índices no plano e verificação real no banco antes de fechar a janela |
+| **`v1.3.0`** | 26/11/2026 | [`v1.3.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.3.0) (`852b664`) | `dist/zotero-eixos-organizer-v1.3.0.xpi` | Plano completo em 1 única tela antes de executar, criação/reuso automático de `<Mãe> - Por Eixo e Tema` sem pasta vazia manual, tempo real automático com notificação e respeito à organização manual |
 | **`v1.2.0`** | 26/11/2026 | [`v1.2.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.2.0) (`e94fe5b`) | `dist/zotero-eixos-organizer-v1.2.0.xpi` | Botão `X` / `Esc` / `Cancelar Lote` encerra lote imediatamente; motor offline cria eixos iniciais automaticamente em pastas destino vazias |
 | **`v1.1.0`** | 26/11/2026 | [`v1.1.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.1.0) (`24b80ef`) | `dist/zotero-eixos-organizer-v1.1.0.xpi` | Correção de instalação no Zotero 10.0.8 (`update_url` + `registerChrome`), correção do escopo `Cu.Sandbox` nos botões de Configurações, autoria **Daniel Barreto** e builds versionadas |
 | **`v1.0.0`** | 26/11/2026 | [`v1.0.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.0.0) (`831f957`) | `dist/zotero-eixos-organizer-v1.0.0.xpi` | Lançamento inicial do plugin (motor híbrido IA + offline, janela interativa, preferências e menus) |
 
-### `v1.3.0` — `dist/zotero-eixos-organizer-v1.3.0.xpi` *(atual)*
+### `v1.4.0` — `dist/zotero-eixos-organizer-v1.4.0.xpi` *(atual)*
+- **Cruzamento IA + Palavras-chave (maior acurácia):** tanto na classificação individual quanto no plano em lote, o motor offline roda primeiro e envia seus candidatos e termos encontrados para a API de IA, que compara sua análise semântica/bibliográfica com o resultado por palavras-chave (confirmando acertos, corrigindo falsos positivos e reconciliando qualquer item omitido pela IA).
+- **Metadados completos do item pai:** o plugin agora resolve automaticamente anexos PDF/notas para o **item pai** e extrai todos os metadados bibliográficos relevantes (`DOI`, `ISBN`, `ISSN`, editora, local, série/coleção, revista/anais, tipo de tese, URL, tags, resumo e nomes de arquivos anexados).
+- **Desempenho otimizado na API:** prompts compactos sem indentação desnecessária, `thinkingConfig` adequado por geração Gemini (`thinkingLevel: "low"` para Gemini 3/4 e `thinkingBudget: 0` para Gemini 2.5, com fallback automático), filtro de blocos de pensamento interno (`thought`), retentativa automática em erros transitórios (429/5xx) e execução paralela de blocos no lote.
+- **Entrega confiável dos pedidos de organização:** retentativa automática (até 3x) quando um item novo ainda está aguardando o Zotero baixar metadados/PDF, deduplicação ajustada (só após sucesso) e notificação clara em caso de item sem correspondência.
+- **Criação manual de índices no próprio plano (desde a 1ª análise):** barra dedicada **Criar índice/eixo manualmente** em `plan-dialog.xhtml`, com botão **+ Atribuir itens** (com busca), cópia/remoção rápida de itens entre eixos e opção de **Reanalisar com IA / Offline** usando os seus índices manuais como alvo.
+- **Janela permanece aberta e verifica a indexação real no Zotero:** ao clicar em **Executar Organização**, a janela exibe progresso ao vivo, consulta diretamente a tabela `collectionItems` do Zotero para confirmar que **cada item do plano foi de fato indexado** na pasta destino (com retentativa automática de pendências) e só fecha quando você clicar em **Concluir e Fechar**.
+
+### `v1.3.0` — `dist/zotero-eixos-organizer-v1.3.0.xpi` *(arquivada)*
 - **Organização em lote em 1 única tela (`plan-dialog.xhtml`):** ao clicar com o botão direito em qualquer coleção → **Organizar por Eixo e Tema (Ver Plano)…**, o plugin analisa todos os itens pendentes em memória e exibe **um único plano completo** com todos os eixos sugeridos (permitindo marcar/desmarcar, renomear eixos e expandir para ver os itens de cada eixo). Nada é criado nem alterado até você clicar em **Executar Organização**.
 - **Sem precisar criar pasta vazia antes:** se a coleção ainda não tiver subcoleção temática, o plugin cria automaticamente `<Nome da Subcoleção Mãe> - Por Eixo e Tema` (nome editável no plano, ex.: `Minha biblioteca - Por Eixo e Tema`) **dentro dela** ao executar e ativa o monitoramento automático; se já existir uma subcoleção temática (aninhada dentro dela ou irmã no padrão `<Nome> - Por Eixo e Tema`, como `Livros - Por Eixo e Tema`), o plugin parte dela automaticamente.
 - **Detecção automática ampliada:** agora reconhece tanto subcoleções irmãs (`Livros → Livros - Por Eixo e Tema`) quanto subcoleções internas (`Minha biblioteca → Minha biblioteca / Minha biblioteca - Por Eixo e Tema`).

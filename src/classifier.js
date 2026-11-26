@@ -211,10 +211,17 @@ var EixosClassifier = (function () {
   function buildItemVector(itemMeta) {
     const itemVec = new Map();
     addWeightedTokens(itemVec, itemMeta.title, 3.5);
+    addWeightedTokens(itemVec, itemMeta.shortTitle, 2.0);
     addWeightedTokens(itemVec, (itemMeta.tags || []).join(" "), 2.5);
     addWeightedTokens(itemVec, itemMeta.abstractNote, 1.5);
     addWeightedTokens(itemVec, (itemMeta.creators || []).join(" "), 1.2);
-    addWeightedTokens(itemVec, itemMeta.publicationTitle, 1.0);
+    addWeightedTokens(itemVec, itemMeta.publicationTitle, 1.2);
+    addWeightedTokens(itemVec, itemMeta.series, 1.4);
+    addWeightedTokens(itemVec, itemMeta.publisher, 0.8);
+    addWeightedTokens(itemVec, itemMeta.thesisType, 1.0);
+    if (!itemMeta.title && itemMeta.attachmentNames && itemMeta.attachmentNames.length > 0) {
+      addWeightedTokens(itemVec, itemMeta.attachmentNames.join(" "), 2.5);
+    }
     return itemVec;
   }
 
@@ -388,14 +395,39 @@ var EixosClassifier = (function () {
     };
   }
 
-  function buildPrompt(itemMeta, targetTree, settings) {
+  function compactParentMeta(itemMeta) {
+    const out = {
+      title: itemMeta.title,
+      itemType: itemMeta.itemType,
+    };
+    if (itemMeta.creators && itemMeta.creators.length > 0) out.creators = itemMeta.creators.slice(0, 4);
+    if (itemMeta.year) out.year = itemMeta.year;
+    if (itemMeta.publicationTitle) out.publicationTitle = itemMeta.publicationTitle;
+    if (itemMeta.publisher) out.publisher = itemMeta.publisher;
+    if (itemMeta.place) out.place = itemMeta.place;
+    if (itemMeta.series) out.series = itemMeta.series;
+    if (itemMeta.thesisType) out.thesisType = itemMeta.thesisType;
+    if (itemMeta.DOI) out.DOI = itemMeta.DOI;
+    if (itemMeta.ISBN) out.ISBN = itemMeta.ISBN;
+    if (itemMeta.ISSN) out.ISSN = itemMeta.ISSN;
+    if (itemMeta.url) out.url = itemMeta.url;
+    if (itemMeta.language) out.language = itemMeta.language;
+    if (itemMeta.tags && itemMeta.tags.length > 0) out.tags = itemMeta.tags.slice(0, 10);
+    if (itemMeta.abstractNote) out.abstractNote = itemMeta.abstractNote.slice(0, 700);
+    if (itemMeta.extra) out.extra = itemMeta.extra.slice(0, 180);
+    if (itemMeta.attachmentNames && itemMeta.attachmentNames.length > 0) {
+      out.files = itemMeta.attachmentNames.slice(0, 2);
+    }
+    return out;
+  }
+
+  function buildPrompt(itemMeta, targetTree, settings, offlineAnalysis) {
     const treeSummary = (targetTree.eixos || []).map((eixo) => {
       if (eixo.isLeaf && eixo.leaf) {
         return {
-          eixoKey: eixo.key,
-          eixoName: eixo.name,
-          directLeaf: true,
-          sampleTitles: (eixo.leaf.sampleTitles || []).slice(0, 6),
+          key: eixo.key,
+          name: eixo.name,
+          samples: (eixo.leaf.sampleTitles || []).slice(0, 4),
         };
       }
       return {
@@ -404,7 +436,7 @@ var EixosClassifier = (function () {
         subtemas: (eixo.children || []).map((ch) => ({
           key: ch.key,
           name: ch.name,
-          sampleTitles: (ch.sampleTitles || []).slice(0, 5),
+          samples: (ch.sampleTitles || []).slice(0, 3),
         })),
       };
     });
@@ -412,39 +444,36 @@ var EixosClassifier = (function () {
     const maxTargets = settings.maxTargets || 3;
     const allowNew = Boolean(settings.allowCreateNew);
 
+    const kwSummary = offlineAnalysis
+      ? {
+          suggested_keys: offlineAnalysis.selectedKeys || [],
+          proposed_new: (offlineAnalysis.proposedNew || []).map((n) => n.name),
+          top_keyword_scores: (offlineAnalysis.scores || []).slice(0, 4).map((s) => ({
+            key: s.key,
+            name: s.name,
+            score: Number((s.score || 0).toFixed(3)),
+            terms: s.matchedTerms || [],
+          })),
+        }
+      : null;
+
     return (
       `Você é um bibliotecário e historiador especialista organizando uma biblioteca acadêmica no Zotero.\n` +
-      `Classifique o novo item abaixo nas subcoleções temáticas já existentes (pode escolher de 1 até ${maxTargets} subcoleções se a obra for interdisciplinar).\n\n` +
-      `REGRAS IMPORTANTES:\n` +
-      `1. Use EXATAMENTE as chaves ("key" de subtema ou "eixoKey" quando directLeaf=true) listadas na estrutura abaixo.\n` +
-      `2. ${
+      `Classifique o item abaixo em 1 até ${maxTargets} subcoleções temáticas.\n\n` +
+      `INSTRUÇÕES DE ACURÁCIA (CRUZAMENTO IA + PALAVRAS-CHAVE + METADADOS DO ITEM PAI):\n` +
+      `1. Considere TODOS os metadados do item pai (título, autores, ano, editora, coleção/série, DOI, ISBN, revista, resumo, tags) e seu conhecimento bibliográfico sobre a obra/autor.\n` +
+      `2. Compare sua análise semântica com a ANALISE_POR_PALAVRAS_CHAVE fornecida abaixo: confirme quando concordarem, corrija falsos positivos de palavras-chave e combine eixos complementares em obras interdisciplinares.\n` +
+      `3. Use EXATAMENTE as chaves ("key") listadas em ESTRUTURA.\n` +
+      `4. ${
         allowNew
-          ? `Se o item tratar de um tema claramente novo que NÃO se encaixe bem em nenhuma subcoleção existente, proponha no máximo 1 nova subcoleção em "new_subcollections", escolhendo o "parent_key" de um eixo existente (ou "__ROOT__" apenas se exigir um eixo totalmente novo) e seguindo o padrão de numeração/estilo das pastas existentes.`
-          : `NÃO proponha novas subcoleções (mantenha "new_subcollections": []). Escolha apenas entre as existentes.`
+          ? `Se o item tratar de tema realmente novo que não se encaixe bem nas pastas existentes, proponha no máximo 1 nova subcoleção em "new_subcollections" (com "parent_key" de um eixo existente ou "__ROOT__").`
+          : `NÃO proponha novas subcoleções ("new_subcollections": []).`
       }\n` +
-      `3. Responda EXCLUSIVAMENTE com um JSON válido, sem texto fora do JSON, no formato:\n` +
-      `{\n` +
-      `  "selected_keys": ["KEY1", "KEY2"],\n` +
-      `  "new_subcollections": [{"parent_key": "EIXO_KEY_OU___ROOT__", "name": "Nome do novo tema"}],\n` +
-      `  "reason": "Justificativa curta em português (1-2 frases)."\n` +
-      `}\n\n` +
-      `ESTRUTURA ATUAL DE EIXOS E TEMAS:\n` +
-      `${JSON.stringify(treeSummary, null, 2)}\n\n` +
-      `NOVO ITEM A CLASSIFICAR:\n` +
-      `${JSON.stringify(
-        {
-          title: itemMeta.title,
-          creators: itemMeta.creators,
-          year: itemMeta.year,
-          itemType: itemMeta.itemType,
-          publicationTitle: itemMeta.publicationTitle,
-          publisher: itemMeta.publisher,
-          tags: itemMeta.tags,
-          abstractNote: itemMeta.abstractNote,
-        },
-        null,
-        2
-      )}`
+      `5. Responda EXCLUSIVAMENTE com JSON válido:\n` +
+      `{"selected_keys":["KEY1"],"new_subcollections":[{"parent_key":"__ROOT__","name":"Nome"}],"reason":"Justificativa curta (1 frase) mencionando o cruzamento IA + palavras-chave."}\n\n` +
+      `ESTRUTURA:${JSON.stringify(treeSummary)}\n` +
+      `ANALISE_POR_PALAVRAS_CHAVE:${JSON.stringify(kwSummary)}\n` +
+      `ITEM_PAI:${JSON.stringify(compactParentMeta(itemMeta))}`
     );
   }
 
@@ -461,39 +490,117 @@ var EixosClassifier = (function () {
     return JSON.parse(cleaned.slice(start, end + 1));
   }
 
-  async function callGemini(prompt, settings) {
+  function buildGeminiThinkingConfig(model) {
+    const m = String(model || "").toLowerCase();
+    if (/gemini-(3|4)/.test(m)) {
+      return { thinkingLevel: "low" };
+    }
+    if (/gemini-2\.5-flash/.test(m)) {
+      return { thinkingBudget: 0 };
+    }
+    return null;
+  }
+
+  function sleepMs(ms) {
+    if (typeof Zotero !== "undefined" && Zotero.Promise && typeof Zotero.Promise.delay === "function") {
+      return Zotero.Promise.delay(ms);
+    }
+    if (typeof setTimeout === "function") {
+      return new Promise((r) => setTimeout(r, ms));
+    }
+    return Promise.resolve();
+  }
+
+  async function requestWithRetry(method, url, options, maxAttempts) {
+    const attempts = Math.max(1, maxAttempts || 2);
+    let lastErr = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await Zotero.HTTP.request(method, url, options);
+      } catch (err) {
+        lastErr = err;
+        const status = err && (err.status || (err.xmlhttp && err.xmlhttp.status));
+        const isTransient = !status || status === 429 || status >= 500;
+        if (!isTransient || i === attempts - 1) {
+          throw err;
+        }
+        await sleepMs(900 * (i + 1));
+      }
+    }
+    throw lastErr;
+  }
+
+  async function callGemini(prompt, settings, timeoutMs) {
     const apiKey = settings.aiApiKey;
     if (!apiKey) throw new Error("Chave de API do Gemini não configurada.");
-    const model = settings.aiModel || "gemini-2.5-flash";
+    const model = settings.aiModel || "gemini-3.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
       model
     )}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-    const body = JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
+    const makeBody = (includeThinking) => {
+      const genConfig = {
+        temperature: 0.15,
         responseMimeType: "application/json",
-      },
-    });
+      };
+      if (includeThinking) {
+        const tc = buildGeminiThinkingConfig(model);
+        if (tc) genConfig.thinkingConfig = tc;
+      }
+      return JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: genConfig,
+      });
+    };
 
-    const resp = await Zotero.HTTP.request("POST", url, {
-      headers: { "Content-Type": "application/json" },
-      body,
-      timeout: 30000,
-    });
+    let resp;
+    const hasTc = Boolean(buildGeminiThinkingConfig(model));
+    try {
+      resp = await requestWithRetry(
+        "POST",
+        url,
+        {
+          headers: { "Content-Type": "application/json" },
+          body: makeBody(hasTc),
+          timeout: timeoutMs || 35000,
+        },
+        2
+      );
+    } catch (err) {
+      const status = err && (err.status || (err.xmlhttp && err.xmlhttp.status));
+      if (hasTc && status === 400) {
+        // Fallback cleanly if this specific model variant does not support thinkingConfig
+        resp = await requestWithRetry(
+          "POST",
+          url,
+          {
+            headers: { "Content-Type": "application/json" },
+            body: makeBody(false),
+            timeout: timeoutMs || 35000,
+          },
+          2
+        );
+      } else {
+        throw err;
+      }
+    }
+
     const data = JSON.parse(resp.responseText);
-    const text =
-      data &&
-      data.candidates &&
-      data.candidates[0] &&
-      data.candidates[0].content &&
-      data.candidates[0].content.parts &&
-      data.candidates[0].content.parts.map((p) => p.text || "").join("\n");
+    const parts =
+      (data &&
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts) ||
+      [];
+    // Ignore internal thought parts so JSON extraction only reads the actual answer
+    const answerParts = parts.filter((p) => p && !p.thought && typeof p.text === "string");
+    const effectiveParts = answerParts.length > 0 ? answerParts : parts;
+    const text = effectiveParts.map((p) => p.text || "").join("\n");
     return extractJsonFromText(text);
   }
 
-  async function callOpenAICompatible(prompt, settings, isCustom) {
+  async function callOpenAICompatible(prompt, settings, isCustom, timeoutMs) {
     const endpoint = isCustom
       ? settings.aiEndpoint || "http://localhost:11434/v1/chat/completions"
       : "https://api.openai.com/v1/chat/completions";
@@ -510,7 +617,7 @@ var EixosClassifier = (function () {
 
     const payload = {
       model,
-      temperature: 0.2,
+      temperature: 0.15,
       messages: [
         {
           role: "system",
@@ -520,11 +627,16 @@ var EixosClassifier = (function () {
       ],
     };
 
-    const resp = await Zotero.HTTP.request("POST", endpoint, {
-      headers,
-      body: JSON.stringify(payload),
-      timeout: 35000,
-    });
+    const resp = await requestWithRetry(
+      "POST",
+      endpoint,
+      {
+        headers,
+        body: JSON.stringify(payload),
+        timeout: timeoutMs || 40000,
+      },
+      2
+    );
     const data = JSON.parse(resp.responseText);
     const text =
       data &&
@@ -543,7 +655,9 @@ var EixosClassifier = (function () {
   }
 
   async function classifyWithAI(itemMeta, targetTree, settings) {
-    const prompt = buildPrompt(itemMeta, targetTree, settings);
+    // Always run fast keyword/TF-IDF analysis first so the AI can cross-check against it
+    const offlineAnalysis = classifyOffline(itemMeta, targetTree, settings);
+    const prompt = buildPrompt(itemMeta, targetTree, settings, offlineAnalysis);
     let parsed;
     if (settings.aiProvider === "gemini") {
       parsed = await callGemini(prompt, settings);
@@ -576,13 +690,27 @@ var EixosClassifier = (function () {
       }
     }
 
+    // Reconcile if AI returned empty selection despite valid offline keyword match
+    if (selectedKeys.length === 0 && proposedNew.length === 0) {
+      for (const k of offlineAnalysis.selectedKeys || []) {
+        if (validLeafKeys.has(k) && !selectedKeys.includes(k)) {
+          selectedKeys.push(k);
+        }
+      }
+      if (selectedKeys.length === 0 && settings.allowCreateNew) {
+        for (const ns of offlineAnalysis.proposedNew || []) {
+          proposedNew.push(ns);
+        }
+      }
+    }
+
     return {
       engineUsed: `ai:${settings.aiProvider}`,
       selectedKeys: selectedKeys.slice(0, settings.maxTargets || 3),
       proposedNew: proposedNew.slice(0, 2),
-      reason: String(parsed.reason || "Classificado via IA.").trim(),
+      reason: String(parsed.reason || "Classificado via cruzamento IA + palavras-chave.").trim(),
       suggestNewHint: proposedNew.length > 0,
-      scores: [],
+      scores: offlineAnalysis.scores || [],
     };
   }
 
@@ -649,12 +777,63 @@ var EixosClassifier = (function () {
    *   unassigned: [{ id, key, title, creators, year }]
    * }
    */
-  function buildBatchPlanOffline(itemsMeta, targetTree, settings) {
-    const safeTree = targetTree || {
+  function mergeManualAxesIntoVirtualTree(targetTree, customAxes) {
+    const baseTree = targetTree || {
       root: { id: 0, key: "__NEW__", name: "Por Eixo e Tema" },
       eixos: [],
       leaves: [],
     };
+    const manualList = Array.isArray(customAxes)
+      ? customAxes.map((s) => String(s || "").trim()).filter(Boolean)
+      : [];
+    if (manualList.length === 0) return { tree: baseTree, manualKeySet: new Set() };
+
+    const clonedLeaves = (baseTree.leaves || []).slice();
+    const clonedEixos = (baseTree.eixos || []).slice();
+    const manualKeySet = new Set();
+
+    const norm = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
+    for (let i = 0; i < manualList.length; i++) {
+      const name = manualList[i];
+      if (clonedLeaves.some((l) => norm(l.name) === norm(name))) continue;
+      const vKey = `__MANUAL_${i}__`;
+      manualKeySet.add(vKey);
+      const leaf = {
+        id: -1 - i,
+        key: vKey,
+        name,
+        parentKey: null,
+        parentName: null,
+        fullLabel: name,
+        itemCount: 0,
+        sampleTitles: [],
+        sampleTags: [],
+        isManual: true,
+      };
+      clonedLeaves.push(leaf);
+      clonedEixos.push({
+        id: -1 - i,
+        key: vKey,
+        name,
+        isLeaf: true,
+        leaf,
+        children: [],
+      });
+    }
+    return {
+      tree: Object.assign({}, baseTree, { eixos: clonedEixos, leaves: clonedLeaves }),
+      manualKeySet,
+    };
+  }
+
+  function buildBatchPlanOffline(itemsMeta, targetTree, settings, customAxes) {
+    const { tree: safeTree, manualKeySet } = mergeManualAxesIntoVirtualTree(targetTree, customAxes);
     const effectiveSettings = Object.assign({}, settings, {
       allowCreateNew: settings.allowCreateNew !== false,
     });
@@ -672,6 +851,21 @@ var EixosClassifier = (function () {
     const leafByKey = new Map();
     for (const l of safeTree.leaves || []) {
       leafByKey.set(l.key, l);
+      if (manualKeySet.has(l.key)) {
+        const keyNorm = l.name
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+        ensureGroup(`new:__ROOT__:${keyNorm}`, {
+          id: `new:__ROOT__:${keyNorm}`,
+          isNew: true,
+          isManual: true,
+          existingKey: null,
+          parentKey: "__ROOT__",
+          parentName: null,
+          name: l.name,
+        });
+      }
     }
 
     for (const item of itemsMeta) {
@@ -681,9 +875,32 @@ var EixosClassifier = (function () {
       for (const k of res.selectedKeys || []) {
         const leaf = leafByKey.get(k);
         if (!leaf) continue;
+        if (manualKeySet.has(k)) {
+          const keyNorm = leaf.name
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+          const gid = `new:__ROOT__:${keyNorm}`;
+          const g = ensureGroup(gid, {
+            id: gid,
+            isNew: true,
+            isManual: true,
+            existingKey: null,
+            parentKey: "__ROOT__",
+            parentName: null,
+            name: leaf.name,
+          });
+          if (!g._seenIds.has(item.id)) {
+            g._seenIds.add(item.id);
+            g.items.push(item);
+          }
+          assignedAny = true;
+          continue;
+        }
         const g = ensureGroup(`existing:${k}`, {
           id: `existing:${k}`,
           isNew: false,
+          isManual: false,
           existingKey: k,
           parentKey: leaf.parentKey || "__ROOT__",
           parentName: leaf.parentName || null,
@@ -707,6 +924,7 @@ var EixosClassifier = (function () {
         const g = ensureGroup(gid, {
           id: gid,
           isNew: true,
+          isManual: false,
           existingKey: null,
           parentKey: ns.parentKey || "__ROOT__",
           parentName: null,
@@ -730,6 +948,7 @@ var EixosClassifier = (function () {
         return g;
       })
       .sort((a, b) => {
+        if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
         if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
         return b.items.length - a.items.length;
       });
@@ -737,7 +956,7 @@ var EixosClassifier = (function () {
     const newCount = groups.filter((g) => g.isNew).length;
     const existCount = groups.length - newCount;
     const reason =
-      safeTree.leaves && safeTree.leaves.length > 0
+      existCount > 0
         ? `Plano gerado em Modo Offline: ${existCount} eixo(s) existente(s) reutilizado(s)${
             newCount > 0 ? ` + ${newCount} novo(s) eixo(s) sugerido(s)` : ""
           }.`
@@ -751,34 +970,127 @@ var EixosClassifier = (function () {
     };
   }
 
-  async function buildBatchPlanWithAI(itemsMeta, targetTree, settings) {
+  async function buildBatchPlanWithAI(itemsMeta, targetTree, settings, customAxes) {
     const safeTree = targetTree || {
       root: { id: 0, key: "__NEW__", name: "Por Eixo e Tema" },
       eixos: [],
       leaves: [],
     };
+    const manualList = Array.isArray(customAxes)
+      ? customAxes.map((s) => String(s || "").trim()).filter(Boolean)
+      : [];
+
+    // 1. Run fast offline keyword plan FIRST for cross-checking!
+    const offlinePlan = buildBatchPlanOffline(itemsMeta, targetTree, settings, manualList);
+    const offlineHintsByItem = new Map();
+    for (const grp of offlinePlan.groups || []) {
+      for (const it of grp.items || []) {
+        if (!offlineHintsByItem.has(it.id)) offlineHintsByItem.set(it.id, []);
+        offlineHintsByItem.get(it.id).push(grp.name);
+      }
+    }
+
     const existingLeaves = (safeTree.leaves || []).map((l) => ({
       key: l.key,
       name: l.name,
-      parentName: l.parentName || null,
+      parent: l.parentName || null,
     }));
 
     const maxTargets = settings.maxTargets || 3;
     const allowNew = settings.allowCreateNew !== false;
-    const compactItems = itemsMeta.map((it) => ({
-      id: it.id,
-      title: it.title,
-      creators: (it.creators || []).slice(0, 2),
-      year: it.year,
-      tags: (it.tags || []).slice(0, 5),
-    }));
 
-    // Process in chunks of up to 80 items so prompts stay fast and accurate
-    const chunkSize = 80;
+    const compactItems = itemsMeta.map((it) => {
+      const obj = {
+        id: it.id,
+        title: it.title,
+      };
+      if (it.creators && it.creators.length > 0) obj.authors = it.creators.slice(0, 2);
+      if (it.year) obj.year = it.year;
+      if (it.publisher) obj.pub = it.publisher;
+      if (it.publicationTitle) obj.journal = it.publicationTitle;
+      if (it.series) obj.series = it.series;
+      if (it.DOI) obj.DOI = it.DOI;
+      if (it.ISBN) obj.ISBN = it.ISBN;
+      if (it.tags && it.tags.length > 0) obj.tags = it.tags.slice(0, 5);
+      const kwHints = offlineHintsByItem.get(it.id);
+      if (kwHints && kwHints.length > 0) obj.kw_hint = kwHints.slice(0, 2);
+      return obj;
+    });
+
+    const chunkSize = 65;
+    const chunks = [];
+    for (let offset = 0; offset < compactItems.length; offset += chunkSize) {
+      chunks.push(compactItems.slice(offset, offset + chunkSize));
+    }
+
+    const offlineAxesSummary = (offlinePlan.groups || []).map((g) => g.name);
+
+    const runChunk = async (chunk, sharedNewAxes) => {
+      const prompt =
+        `Você é um bibliotecário e historiador especialista organizando uma coleção no Zotero.\n` +
+        `Classifique TODOS os ${chunk.length} itens abaixo (1 até ${maxTargets} eixos por item) cruzando:\n` +
+        `(a) os metadados completos do item pai (título, autores, editora, revista, série, DOI, ISBN, tags) + seu conhecimento bibliográfico da obra;\n` +
+        `(b) o campo "kw_hint" gerado pela análise local por palavras-chave — confirme quando concordar e corrija quando a palavra-chave induzir erro.\n\n` +
+        `REGRAS:\n` +
+        `1. ${
+          existingLeaves.length > 0
+            ? `Priorize usar as pastas EXISTENTES (informando "existing_key").`
+            : `Pasta destino vazia — crie entre 4 e 10 eixos temáticos coerentes em português.`
+        }\n` +
+        (manualList.length > 0
+          ? `2. O usuário definiu manualmente estes índices (USE-OS com os nomes exatos quando aplicável): ${JSON.stringify(manualList)}.\n`
+          : "") +
+        `3. ${
+          allowNew
+            ? `Pode propor novos eixos ("existing_key": null, "name": "Nome em PT-BR"), reutilizando nomes já sugeridos quando couber.`
+            : `NÃO proponha novos eixos; use apenas "existing_key".`
+        }\n` +
+        `4. Responda EXCLUSIVAMENTE com JSON válido:\n` +
+        `{"axes":[{"existing_key":null,"name":"Nome do Eixo","item_ids":[1,2]}],"summary":"Resumo curto."}\n\n` +
+        `PASTAS_EXISTENTES:${JSON.stringify(existingLeaves)}\n` +
+        `EIXOS_PALAVRAS_CHAVE:${JSON.stringify(sharedNewAxes.length > 0 ? sharedNewAxes : offlineAxesSummary)}\n` +
+        `ITENS:${JSON.stringify(chunk)}`;
+
+      if (settings.aiProvider === "gemini") {
+        return callGemini(prompt, settings, 45000);
+      }
+      if (settings.aiProvider === "openai") {
+        return callOpenAICompatible(prompt, settings, false, 45000);
+      }
+      return callOpenAICompatible(prompt, settings, true, 50000);
+    };
+
     const groupsMap = new Map();
     const itemById = new Map(itemsMeta.map((it) => [it.id, it]));
     const leafByKey = new Map((safeTree.leaves || []).map((l) => [l.key, l]));
     const assignedIds = new Set();
+
+    const normKey = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
+    const manualNormSet = new Set(manualList.map(normKey));
+    // Pre-register manual axes so they are always preserved even if 0 items match
+    for (const mName of manualList) {
+      const gid = `new:__ROOT__:${normKey(mName)}`;
+      if (!groupsMap.has(gid)) {
+        groupsMap.set(gid, {
+          id: gid,
+          isNew: true,
+          isManual: true,
+          existingKey: null,
+          parentKey: "__ROOT__",
+          parentName: null,
+          name: mName,
+          enabled: true,
+          items: [],
+          _seen: new Set(),
+        });
+      }
+    }
 
     function addToGroup(gid, meta, item) {
       if (!groupsMap.has(gid)) {
@@ -792,49 +1104,8 @@ var EixosClassifier = (function () {
       assignedIds.add(item.id);
     }
 
-    for (let offset = 0; offset < compactItems.length; offset += chunkSize) {
-      const chunk = compactItems.slice(offset, offset + chunkSize);
-      const proposedAxesSoFar = Array.from(groupsMap.values())
-        .filter((g) => g.isNew)
-        .map((g) => g.name);
-
-      const prompt =
-        `Você é um bibliotecário e historiador especialista organizando uma coleção acadêmica no Zotero.\n` +
-        `Analise TODOS os ${chunk.length} itens abaixo e distribua-os por Eixos Temáticos coerentes (cada item pode ficar em 1 até ${maxTargets} eixos se for interdisciplinar).\n\n` +
-        `REGRAS:\n` +
-        `1. ${
-          existingLeaves.length > 0
-            ? `Priorize usar as pastas EXISTENTES listadas abaixo (informando o "existing_key").`
-            : `A pasta destino ainda está vazia — proponha entre 4 e 10 eixos temáticos bem estruturados em português.`
-        }\n` +
-        `2. ${
-          allowNew
-            ? `Você pode propor novos eixos quando necessário (use "existing_key": null e dê um "name" claro em português). Reutilize nomes já propostos quando fizer sentido.`
-            : `NÃO proponha novos eixos; use apenas os "existing_key" listados.`
-        }\n` +
-        `3. Responda EXCLUSIVAMENTE com JSON válido neste formato:\n` +
-        `{\n` +
-        `  "axes": [\n` +
-        `    {"existing_key": "KEY_OU_NULL", "name": "Nome do Eixo", "item_ids": [1, 2, 3]}\n` +
-        `  ],\n` +
-        `  "summary": "Resumo curto em português."\n` +
-        `}\n\n` +
-        `PASTAS EXISTENTES:\n${JSON.stringify(existingLeaves)}\n\n` +
-        (proposedAxesSoFar.length > 0
-          ? `EIXOS NOVOS JÁ PROPOSTOS NO LOTE:\n${JSON.stringify(proposedAxesSoFar)}\n\n`
-          : "") +
-        `ITENS A ORGANIZAR:\n${JSON.stringify(chunk)}`;
-
-      let parsed;
-      if (settings.aiProvider === "gemini") {
-        parsed = await callGemini(prompt, settings);
-      } else if (settings.aiProvider === "openai") {
-        parsed = await callOpenAICompatible(prompt, settings, false);
-      } else {
-        parsed = await callOpenAICompatible(prompt, settings, true);
-      }
-
-      for (const ax of Array.isArray(parsed.axes) ? parsed.axes : []) {
+    function absorbParsed(parsed) {
+      for (const ax of Array.isArray(parsed && parsed.axes) ? parsed.axes : []) {
         if (!ax || !Array.isArray(ax.item_ids)) continue;
         const validLeaf = ax.existing_key && leafByKey.get(ax.existing_key);
         for (const rawId of ax.item_ids) {
@@ -846,6 +1117,7 @@ var EixosClassifier = (function () {
               {
                 id: `existing:${validLeaf.key}`,
                 isNew: false,
+                isManual: false,
                 existingKey: validLeaf.key,
                 parentKey: validLeaf.parentKey || "__ROOT__",
                 parentName: validLeaf.parentName || null,
@@ -855,15 +1127,13 @@ var EixosClassifier = (function () {
             );
           } else if (allowNew && ax.name && String(ax.name).trim()) {
             const cleanName = String(ax.name).trim();
-            const norm = cleanName
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase();
+            const n = normKey(cleanName);
             addToGroup(
-              `new:__ROOT__:${norm}`,
+              `new:__ROOT__:${n}`,
               {
-                id: `new:__ROOT__:${norm}`,
+                id: `new:__ROOT__:${n}`,
                 isNew: true,
+                isManual: manualNormSet.has(n),
                 existingKey: null,
                 parentKey: "__ROOT__",
                 parentName: null,
@@ -876,41 +1146,104 @@ var EixosClassifier = (function () {
       }
     }
 
+    // Run chunk 1 first to establish unified axis names, then remaining chunks in parallel (batches of 2) for speed!
+    if (chunks.length > 0) {
+      const firstParsed = await runChunk(chunks[0], manualList);
+      absorbParsed(firstParsed);
+
+      const establishedAxes = Array.from(groupsMap.values())
+        .filter((g) => g.isNew)
+        .map((g) => g.name);
+
+      for (let i = 1; i < chunks.length; i += 2) {
+        const pair = chunks.slice(i, i + 2);
+        const results = await Promise.all(pair.map((ch) => runChunk(ch, establishedAxes)));
+        for (const r of results) absorbParsed(r);
+      }
+    }
+
+    // Reconcile any item omitted by AI using the offline keyword cross-check so 0 items get silently dropped
+    let reconciledFromOffline = 0;
+    for (const grp of offlinePlan.groups || []) {
+      for (const it of grp.items || []) {
+        if (assignedIds.has(it.id)) continue;
+        reconciledFromOffline++;
+        if (!grp.isNew && grp.existingKey && leafByKey.has(grp.existingKey)) {
+          const leaf = leafByKey.get(grp.existingKey);
+          addToGroup(
+            `existing:${leaf.key}`,
+            {
+              id: `existing:${leaf.key}`,
+              isNew: false,
+              isManual: false,
+              existingKey: leaf.key,
+              parentKey: leaf.parentKey || "__ROOT__",
+              parentName: leaf.parentName || null,
+              name: leaf.name,
+            },
+            it
+          );
+        } else if (allowNew) {
+          const n = normKey(grp.name);
+          addToGroup(
+            `new:__ROOT__:${n}`,
+            {
+              id: `new:__ROOT__:${n}`,
+              isNew: true,
+              isManual: manualNormSet.has(n),
+              existingKey: null,
+              parentKey: "__ROOT__",
+              parentName: null,
+              name: grp.name,
+            },
+            it
+          );
+        }
+      }
+    }
+
     const unassigned = itemsMeta.filter((it) => !assignedIds.has(it.id));
     const groups = Array.from(groupsMap.values())
       .map((g) => {
         delete g._seen;
         return g;
       })
-      .sort((a, b) => b.items.length - a.items.length);
+      .sort((a, b) => {
+        if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
+        return b.items.length - a.items.length;
+      });
 
+    const extraNote =
+      reconciledFromOffline > 0
+        ? ` (+ ${reconciledFromOffline} completado(s) via palavras-chave)`
+        : "";
     return {
       engineUsed: `ai:${settings.aiProvider}`,
-      reason: `Plano completo gerado via IA (${settings.aiProvider}): ${groups.length} eixo(s) para ${itemsMeta.length} item(ns).`,
+      reason: `Cruzamento IA (${settings.aiProvider}) + palavras-chave: ${groups.length} eixo(s) para ${itemsMeta.length} item(ns)${extraNote}.`,
       groups,
       unassigned,
     };
   }
 
-  async function buildBatchPlan(itemsMeta, targetTree, settings, forceEngine) {
+  async function buildBatchPlan(itemsMeta, targetTree, settings, forceEngine, customAxes) {
     const engine = forceEngine || settings.engine || "hybrid";
     if (engine === "offline") {
-      return buildBatchPlanOffline(itemsMeta, targetTree, settings);
+      return buildBatchPlanOffline(itemsMeta, targetTree, settings, customAxes);
     }
     if (engine === "ai" || (engine === "hybrid" && hasAIConfigured(settings))) {
       try {
-        return await buildBatchPlanWithAI(itemsMeta, targetTree, settings);
+        return await buildBatchPlanWithAI(itemsMeta, targetTree, settings, customAxes);
       } catch (err) {
         Zotero.debug("EixosClassifier.buildBatchPlan AI error: " + err);
         if (engine === "ai") throw err;
-        const fallback = buildBatchPlanOffline(itemsMeta, targetTree, settings);
+        const fallback = buildBatchPlanOffline(itemsMeta, targetTree, settings, customAxes);
         fallback.reason = `Fallback offline (IA indisponível: ${err.message || err}). ${fallback.reason}`;
         return fallback;
       }
     }
-    const offline = buildBatchPlanOffline(itemsMeta, targetTree, settings);
+    const offline = buildBatchPlanOffline(itemsMeta, targetTree, settings, customAxes);
     if (engine === "hybrid" && !hasAIConfigured(settings)) {
-      offline.reason = `Modo offline ativo (configure uma chave de IA se quiser classificação semântica avançada). ${offline.reason}`;
+      offline.reason = `Modo offline ativo (configure uma chave de IA para cruzamento semântico + palavras-chave). ${offline.reason}`;
     }
     return offline;
   }

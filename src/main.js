@@ -116,14 +116,18 @@ var EixosMain = (function () {
     return dialogArgs.result;
   }
 
-  async function processSingleItem(item, rule, options) {
+  async function processSingleItem(rawItem, rule, options) {
     const opts = options || {};
     const settings = EixosConfig.getSettings();
-    const libID = rule.libraryID || item.libraryID || Zotero.Libraries.userLibraryID;
+    const libID = rule.libraryID || (rawItem && rawItem.libraryID) || Zotero.Libraries.userLibraryID;
 
+    if (!rawItem || rawItem.deleted) return { status: "skipped" };
+    if (rawItem.isNote && rawItem.isNote() && !rawItem.parentItemID) return { status: "skipped" };
+
+    // Always resolve child attachment / child note to its parent bibliographic item!
+    const item = await EixosOrganizer.resolveParentItem(rawItem);
     if (!item || item.deleted) return { status: "skipped" };
     if (item.isNote && item.isNote()) return { status: "skipped" };
-    if (item.isAttachment && item.isAttachment() && item.parentItemID) return { status: "skipped" };
 
     const targetTree = await EixosOrganizer.getTargetTree(libID, rule.targetRootKey);
     if (!opts.force && settings.skipAlreadyClassified && EixosOrganizer.isItemAlreadyInTargetTree(item, targetTree)) {
@@ -132,7 +136,7 @@ var EixosMain = (function () {
 
     const itemMeta = EixosOrganizer.getItemMetadata(item);
     if (!itemMeta || !itemMeta.title) {
-      return { status: "skipped" };
+      return { status: "needs_retry" };
     }
 
     const effectiveSettings = Object.assign({}, settings, {
@@ -175,6 +179,7 @@ var EixosMain = (function () {
     );
 
     if (applied.changed) {
+      recentHandled.set(`${rule.sourceKey}:${item.id}`, Date.now());
       const createdMsg =
         applied.createdNames.length > 0
           ? ` (nova pasta: ${applied.createdNames.join(", ")})`
@@ -191,6 +196,18 @@ var EixosMain = (function () {
       }
       return { status: "linked", applied };
     }
+
+    if (!opts.silentToast && !useInteractive) {
+      showToast(
+        "Eixos Organizer — Sem alteração",
+        [
+          `“${itemMeta.title.slice(0, 72)}”`,
+          classification.reason ||
+            "Nenhuma pasta correspondente encontrada (clique com botão direito no item para classificar manualmente).",
+        ],
+        5500
+      );
+    }
     return { status: "unchanged" };
   }
 
@@ -201,7 +218,7 @@ var EixosMain = (function () {
     win.openDialog(
       "chrome://eixos-organizer/content/plan-dialog.xhtml",
       "eixos-organizer-plan-dialog",
-      "chrome,dialog,modal,centerscreen,resizable,width=780,height=700",
+      "chrome,dialog,modal,centerscreen,resizable,width=820,height=740",
       dialogArgs
     );
 
@@ -241,10 +258,10 @@ var EixosMain = (function () {
 
   /**
    * Single-screen batch workflow:
-   * 1. Auto-detects existing thematic subcollection (nested or sibling) or prepares to create one inside source.
-   * 2. Scans all pending items in memory (skipping items already placed in the thematic tree).
-   * 3. Opens ONE Plan Review dialog showing all suggested axes & items.
-   * 4. Only on "Executar Organização" creates subcollections, links items, and registers automatic monitoring.
+   * 1. Auto-detects existing thematic subcollection (nested or sibling) or prepares to create "<Source> - Por Eixo e Tema" inside source.
+   * 2. Scans all pending items in memory (using parent metadata + hybrid AI/keyword cross-check).
+   * 3. Opens ONE Plan Review dialog allowing manual index creation, item reassignment, and replanning.
+   * 4. Executes INSIDE the open dialog with live progress and direct DB verification of every indexed item.
    */
   async function organizeCollectionWithPlan(collection) {
     const win = getActiveWindow();
@@ -339,37 +356,55 @@ var EixosMain = (function () {
       ),
     });
 
+    // Show immediate progress toast while building plan (especially helpful when calling AI API)
+    const usingAI =
+      effectiveSettings.engine === "ai" ||
+      (effectiveSettings.engine === "hybrid" && EixosClassifier.hasAIConfigured(effectiveSettings));
+    let loadingToast = showToast(
+      "Eixos Organizer — Gerando plano",
+      [
+        usingAI
+          ? `Analisando ${itemsMeta.length} item(ns) de “${col.name}” com IA + palavras-chave…`
+          : `Analisando ${itemsMeta.length} item(ns) de “${col.name}” (modo offline)…`,
+      ],
+      60000
+    );
+
     // 3. Build complete plan in memory (ZERO writes to Zotero yet)
     let plan;
     try {
       plan = await EixosClassifier.buildBatchPlan(itemsMeta, targetTree, effectiveSettings);
     } catch (err) {
+      if (loadingToast && typeof loadingToast.close === "function") {
+        try {
+          loadingToast.close();
+        } catch (e) {}
+      }
       showToast("Eixos Organizer — Erro ao gerar plano", [String(err.message || err)], 6500);
       return;
     }
 
-    // 4. Open ONE review dialog for the entire collection
-    const defaultNewRootName = `${col.name} - Por Eixo e Tema`;
-    const dialogResult = openPlanDialog({
-      sourceName: col.name,
-      totalPending: itemsMeta.length,
-      existingTarget,
-      defaultNewRootName,
-      plan,
-      replan: async (forceEngine) => {
-        const latest = EixosConfig.getSettings();
-        return EixosClassifier.buildBatchPlan(itemsMeta, targetTree, latest, forceEngine);
-      },
-      result: null,
-    });
-
-    if (!dialogResult || !dialogResult.confirmed || !Array.isArray(dialogResult.groups) || dialogResult.groups.length === 0) {
-      return;
+    if (loadingToast && typeof loadingToast.close === "function") {
+      try {
+        loadingToast.close();
+      } catch (e) {}
     }
 
-    // 5. Execute approved plan (100% non-destructive)
-    try {
-      let targetRootCol;
+    const itemTitleByID = new Map(itemsMeta.map((m) => [m.id, m.title]));
+    const defaultNewRootName = `${col.name} - Por Eixo e Tema`;
+
+    // 4. Execution + real DB verification callback (runs while Plan dialog remains open!)
+    const executePlanInDialog = async (payload, onProgress) => {
+      const reportProgress = (percent, message) => {
+        if (typeof onProgress === "function") {
+          try {
+            onProgress({ percent, message });
+          } catch (e) {}
+        }
+      };
+
+      reportProgress(10, "Preparando subcoleção temática destino…");
+      let targetRootCol = null;
       if (existingTarget) {
         targetRootCol = Zotero.Collections.getByLibraryAndKey(libID, existingTarget.key);
       }
@@ -377,18 +412,26 @@ var EixosMain = (function () {
         targetRootCol = await EixosOrganizer.ensureTargetRootInsideSource(
           libID,
           col.key,
-          dialogResult.newRootName || defaultNewRootName
+          payload.newRootName || defaultNewRootName
         );
+        existingTarget = {
+          id: targetRootCol.id,
+          key: targetRootCol.key,
+          name: targetRootCol.name,
+          path: `${col.name} / ${targetRootCol.name}`,
+        };
       }
 
       // Register managed rule automatically so future items dropped in `col` are organized in real time
       await ensureRuleRegistered(libID, col, targetRootCol);
 
-      // Create/resolve all approved axis subcollections first
+      // Create/resolve all approved axis subcollections (including empty manual indices!)
+      reportProgress(25, `Criando/validando ${payload.groups.length} eixo(s)…`);
       const itemToColIDs = new Map();
+      const colNameByID = new Map();
       const createdAxisNames = [];
 
-      for (const grp of dialogResult.groups) {
+      for (const grp of payload.groups || []) {
         let axisCol = null;
         if (!grp.isNew && grp.existingKey) {
           axisCol = Zotero.Collections.getByLibraryAndKey(libID, grp.existingKey);
@@ -403,81 +446,132 @@ var EixosMain = (function () {
           createdAxisNames.push(axisCol.name);
         }
 
+        colNameByID.set(axisCol.id, axisCol.name);
+
         for (const itemID of grp.itemIds || []) {
           if (!itemToColIDs.has(itemID)) itemToColIDs.set(itemID, new Set());
           itemToColIDs.get(itemID).add(axisCol.id);
         }
       }
 
-      // Link each item in a single saveTx() call (never removes from source!)
-      let linkedItems = 0;
-      let totalLinks = 0;
-      for (const [itemID, colIDs] of itemToColIDs.entries()) {
-        const item = await Zotero.Items.getAsync(itemID);
-        if (!item || item.deleted) continue;
-        const currentCols = new Set(item.getCollections());
-        let changed = false;
-        for (const cid of colIDs) {
-          if (!currentCols.has(cid)) {
-            item.addToCollection(cid);
-            changed = true;
-            totalLinks++;
+      // Helper to apply links to a map of itemID -> Set(colIDs)
+      const linkBatch = async (mapToLink, basePct, spanPct) => {
+        const entries = Array.from(mapToLink.entries());
+        let linkedItems = 0;
+        let totalLinks = 0;
+        for (let idx = 0; idx < entries.length; idx++) {
+          const [itemID, colIDs] = entries[idx];
+          const item = await Zotero.Items.getAsync(itemID);
+          if (!item || item.deleted) continue;
+          const currentCols = new Set(item.getCollections());
+          let changed = false;
+          for (const cid of colIDs) {
+            if (!currentCols.has(cid)) {
+              item.addToCollection(cid);
+              changed = true;
+              totalLinks++;
+            }
+          }
+          if (changed) {
+            recentHandled.set(`${col.key}:${item.id}`, Date.now());
+            await item.saveTx();
+            linkedItems++;
+          }
+          if (entries.length > 0 && (idx % 5 === 0 || idx === entries.length - 1)) {
+            const pct = basePct + Math.round(((idx + 1) / entries.length) * spanPct);
+            reportProgress(pct, `Indexando itens (${idx + 1}/${entries.length})…`);
           }
         }
-        if (changed) {
-          recentHandled.set(`${col.key}:${item.id}`, Date.now());
-          await item.saveTx();
-          linkedItems++;
+        return { linkedItems, totalLinks };
+      };
+
+      const { linkedItems, totalLinks } = await linkBatch(itemToColIDs, 30, 50);
+
+      // Verify EVERY planned item/link directly against Zotero's collectionItems table!
+      reportProgress(85, "Verificando indexação real no banco do Zotero…");
+      let verification = await EixosOrganizer.verifyItemsIndexed(
+        libID,
+        itemToColIDs,
+        colNameByID,
+        itemTitleByID
+      );
+
+      // Automatic retry once if any link failed verification on first pass
+      if (verification.missing && verification.missing.length > 0) {
+        reportProgress(92, `Reenviando ${verification.missing.length} item(ns) pendente(s) na verificação…`);
+        const retryMap = new Map();
+        for (const m of verification.missing) {
+          retryMap.set(m.itemID, new Set(m.missingColIDs));
         }
+        await linkBatch(retryMap, 92, 5);
+        verification = await EixosOrganizer.verifyItemsIndexed(
+          libID,
+          itemToColIDs,
+          colNameByID,
+          itemTitleByID
+        );
       }
 
-      const createdSummary =
-        createdAxisNames.length > 0 ? ` | ${createdAxisNames.length} pasta(s) criada(s)` : "";
-      showToast(
-        "Eixos Organizer — Organização concluída",
-        [
-          `“${col.name}” → “${targetRootCol.name}”`,
-          `${linkedItems} item(ns) vinculado(s) (${totalLinks} vínculos)${createdSummary}. Monitoramento automático ativado!`,
-        ],
-        7000
-      );
-    } catch (err) {
-      Zotero.debug("EixosMain.organizeCollectionWithPlan execute error: " + err);
-      showToast("Eixos Organizer — Erro ao executar plano", [String(err.message || err)], 7000);
+      reportProgress(100, "Verificação concluída!");
+      return {
+        targetRootName: targetRootCol.name,
+        createdAxisNames,
+        linkedItems,
+        totalLinks,
+        verification,
+      };
+    };
+
+    // 5. Open ONE review + live verified execution dialog
+    openPlanDialog({
+      sourceName: col.name,
+      totalPending: itemsMeta.length,
+      existingTarget,
+      defaultNewRootName,
+      allItems: itemsMeta,
+      plan,
+      replan: async (forceEngine, manualAxes) => {
+        const latest = EixosConfig.getSettings();
+        return EixosClassifier.buildBatchPlan(itemsMeta, targetTree, latest, forceEngine, manualAxes);
+      },
+      executePlan: executePlanInDialog,
+      result: null,
+    });
+  }
+
+  function scheduleDrain(delayMs) {
+    if (pendingTimer && _clearTimeout) {
+      _clearTimeout(pendingTimer);
+    }
+    if (_setTimeout) {
+      pendingTimer = _setTimeout(() => {
+        pendingTimer = null;
+        drainQueue();
+      }, delayMs || 1200);
+    } else {
+      drainQueue();
     }
   }
 
-  function enqueueAddedItem(collectionID, itemID) {
+  function enqueueAddedItem(collectionID, itemID, attempt) {
     const col = Zotero.Collections.get(collectionID);
     if (!col) return;
     const rule = EixosConfig.findRuleForSourceCollection(col.key, col.libraryID);
     if (!rule) return;
 
+    const retryCount = attempt || 0;
     const dedupKey = `${rule.sourceKey}:${itemID}`;
     const now = Date.now();
     const last = recentHandled.get(dedupKey);
-    if (last && now - last < 8000) return;
-    recentHandled.set(dedupKey, now);
+    if (retryCount === 0 && last && now - last < 3000) return;
 
     // Avoid duplicate entries in queue
     if (queue.some((q) => q.itemID === itemID && q.rule.sourceKey === rule.sourceKey)) {
       return;
     }
 
-    queue.push({ itemID, rule });
-
-    if (pendingTimer && _clearTimeout) {
-      _clearTimeout(pendingTimer);
-    }
-    // Wait briefly so Zotero finishes attaching PDFs/metadata before classifying
-    if (_setTimeout) {
-      pendingTimer = _setTimeout(() => {
-        pendingTimer = null;
-        drainQueue();
-      }, 1200);
-    } else {
-      drainQueue();
-    }
+    queue.push({ collectionID, itemID, rule, attempt: retryCount });
+    scheduleDrain(retryCount === 0 ? 1200 : 1800 * retryCount);
   }
 
   async function drainQueue() {
@@ -500,13 +594,33 @@ var EixosMain = (function () {
             queue = [];
             break;
           }
+          // If metadata wasn't ready yet (e.g., Zotero still fetching PDF metadata), retry up to 3 times!
+          if (res && res.status === "needs_retry" && (task.attempt || 0) < 3) {
+            const nextAttempt = (task.attempt || 0) + 1;
+            const retryDelay = nextAttempt * 2000;
+            if (_setTimeout) {
+              _setTimeout(() => {
+                enqueueAddedItem(task.collectionID, task.itemID, nextAttempt);
+              }, retryDelay);
+            }
+          }
         } catch (err) {
           Zotero.debug("EixosMain.drainQueue item error: " + err);
-          showToast("Eixos Organizer — Aviso", [String(err.message || err)], 6000);
+          if ((task.attempt || 0) < 1 && _setTimeout) {
+            // One automatic retry on transient error so organization requests never silently vanish
+            _setTimeout(() => {
+              enqueueAddedItem(task.collectionID, task.itemID, (task.attempt || 0) + 1);
+            }, 2500);
+          } else {
+            showToast("Eixos Organizer — Aviso", [String(err.message || err)], 6000);
+          }
         }
       }
     } finally {
       isProcessingQueue = false;
+      if (queue.length > 0) {
+        scheduleDrain(500);
+      }
     }
   }
 
@@ -520,7 +634,7 @@ var EixosMain = (function () {
         const collectionID = Number(parts[0]);
         const itemID = Number(parts[1]);
         if (!Number.isFinite(collectionID) || !Number.isFinite(itemID)) continue;
-        enqueueAddedItem(collectionID, itemID);
+        enqueueAddedItem(collectionID, itemID, 0);
       }
     },
   };
@@ -530,12 +644,17 @@ var EixosMain = (function () {
     const pane = win && win.ZoteroPane;
     if (!pane) return;
 
-    const items = pane.getSelectedItems().filter((it) => {
-      if (!it || it.deleted) return false;
-      if (it.isNote && it.isNote()) return false;
-      if (it.isAttachment && it.isAttachment() && it.parentItemID) return false;
-      return true;
-    });
+    const rawSelected = pane.getSelectedItems() || [];
+    const seenIds = new Set();
+    const items = [];
+    for (const raw of rawSelected) {
+      const resolved = await EixosOrganizer.resolveParentItem(raw);
+      if (!resolved || resolved.deleted) continue;
+      if (resolved.isNote && resolved.isNote()) continue;
+      if (seenIds.has(resolved.id)) continue;
+      seenIds.add(resolved.id);
+      items.push(resolved);
+    }
     if (items.length === 0) {
       showToast("Eixos Organizer", ["Selecione ao menos um livro, artigo ou PDF."], 3500);
       return;
