@@ -196,9 +196,88 @@ var EixosClassifier = (function () {
     return chosen;
   }
 
+  function stripNumericPrefix(name) {
+    return String(name || "")
+      .trim()
+      .replace(/^\d{1,2}\s*[-–—]\s*/, "")
+      .replace(/^\d{1,2}\.\d{1,2}\s+/, "")
+      .trim();
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function getNextRootAxisNumber(targetTree) {
+    let maxNum = 0;
+    for (const e of (targetTree && targetTree.eixos) || []) {
+      const m = String(e.name || "").trim().match(/^(\d{1,2})\s*[-–—]/);
+      if (m) {
+        const num = parseInt(m[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    return maxNum > 0 ? maxNum + 1 : ((targetTree && targetTree.eixos && targetTree.eixos.length) || 0) + 1;
+  }
+
+  function formatNumberedAxisName(rawName, nextNum) {
+    const clean = String(rawName || "").trim();
+    if (!clean) return clean;
+    const existing = clean.match(/^(\d{1,2})\s*[-–—]\s*(.+)$/);
+    if (existing) {
+      return `${pad2(parseInt(existing[1], 10))} - ${existing[2].trim()}`;
+    }
+    return `${pad2(nextNum)} - ${clean}`;
+  }
+
+  function formatNumberedSubtemaName(rawName, parentEixo, offset) {
+    const clean = String(rawName || "").trim();
+    if (!clean) return clean;
+    if (/^\d{1,2}\.\d{1,2}\s+/.test(clean)) return clean;
+    const pm = String((parentEixo && parentEixo.name) || "").trim().match(/^(\d{1,2})\s*[-–—]/);
+    if (!pm) return clean;
+    const parentNum = parseInt(pm[1], 10);
+    let maxSub = 0;
+    for (const ch of (parentEixo && parentEixo.children) || []) {
+      const cm = String(ch.name || "").trim().match(/^(\d{1,2})\.(\d{1,2})\b/);
+      if (cm && parseInt(cm[1], 10) === parentNum) {
+        maxSub = Math.max(maxSub, parseInt(cm[2], 10));
+      }
+    }
+    const nextSub = Math.max(maxSub, ((parentEixo && parentEixo.children && parentEixo.children.length) || 0)) + 1 + (offset || 0);
+    return `${parentNum}.${nextSub} ${clean}`;
+  }
+
+  function applyNumberingToNewGroups(groups, targetTree) {
+    let nextNum = getNextRootAxisNumber(targetTree);
+    const usedNums = new Set();
+    for (const e of (targetTree && targetTree.eixos) || []) {
+      const m = String(e.name || "").trim().match(/^(\d{1,2})\s*[-–—]/);
+      if (m) usedNums.add(parseInt(m[1], 10));
+    }
+    for (const g of groups) {
+      if (!g.isNew) continue;
+      if (!g.parentKey || g.parentKey === "__ROOT__") {
+        const m = String(g.name || "").trim().match(/^(\d{1,2})\s*[-–—]\s*(.+)$/);
+        if (m) {
+          const num = parseInt(m[1], 10);
+          g.name = `${pad2(num)} - ${m[2].trim()}`;
+          usedNums.add(num);
+          if (num >= nextNum) nextNum = num + 1;
+        } else {
+          while (usedNums.has(nextNum)) nextNum++;
+          g.name = `${pad2(nextNum)} - ${String(g.name || "").trim()}`;
+          usedNums.add(nextNum);
+          nextNum++;
+        }
+      }
+    }
+    return groups;
+  }
+
   function findExistingLeafByName(leaves, name) {
     const norm = (s) =>
-      String(s || "")
+      stripNumericPrefix(s)
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
@@ -246,12 +325,13 @@ var EixosClassifier = (function () {
       const seedMatches = scoreAgainstTopicSeeds(itemVec, maxTargets);
       if (seedMatches.length > 0) {
         const terms = seedMatches[0].matchedTerms.join(", ");
+        let nextNum = getNextRootAxisNumber(targetTree);
         return {
           engineUsed: "offline",
           selectedKeys: [],
           proposedNew: seedMatches.map((m) => ({
             parentKey: "__ROOT__",
-            name: m.seed.name,
+            name: formatNumberedAxisName(m.seed.name, nextNum++),
           })),
           reason: `Modo offline (pasta destino vazia): novo eixo sugerido a partir de termos como "${terms}".`,
           suggestNewHint: true,
@@ -259,7 +339,8 @@ var EixosClassifier = (function () {
         };
       }
       const firstCleanTag = (itemMeta.tags || []).find((t) => String(t).trim().length >= 3);
-      const fallbackName = firstCleanTag ? String(firstCleanTag).trim() : "Geral e Outros Temas";
+      const fallbackRaw = firstCleanTag ? String(firstCleanTag).trim() : "Geral e Outros Temas";
+      const fallbackName = formatNumberedAxisName(fallbackRaw, getNextRootAxisNumber(targetTree));
       return {
         engineUsed: "offline",
         selectedKeys: [],
@@ -352,6 +433,7 @@ var EixosClassifier = (function () {
       reason = `Modo offline (similaridade textual): termos em comum como "${topTerms || "título/tema"}".`;
     } else if (allowCreateNew) {
       const seedMatches = scoreAgainstTopicSeeds(itemVec, maxTargets);
+      let nextNum = getNextRootAxisNumber(targetTree);
       for (const m of seedMatches) {
         const existing = findExistingLeafByName(leaves, m.seed.name);
         if (existing) {
@@ -359,7 +441,7 @@ var EixosClassifier = (function () {
             selected.push({ key: existing.key, name: existing.name, matchedTerms: m.matchedTerms });
           }
         } else {
-          proposedNew.push({ parentKey: "__ROOT__", name: m.seed.name });
+          proposedNew.push({ parentKey: "__ROOT__", name: formatNumberedAxisName(m.seed.name, nextNum++) });
         }
       }
       if (selected.length > 0 || proposedNew.length > 0) {
@@ -374,8 +456,9 @@ var EixosClassifier = (function () {
           selected.push({ key: existingFallback.key, name: existingFallback.name, matchedTerms: [] });
           reason = `Modo offline: sem correspondência forte — encaminhado para "${existingFallback.name}".`;
         } else {
-          proposedNew.push({ parentKey: "__ROOT__", name: "Geral e Outros Temas" });
-          reason = 'Modo offline: sem correspondência forte — sugerindo pasta "Geral e Outros Temas".';
+          const numberedFallback = formatNumberedAxisName("Geral e Outros Temas", nextNum++);
+          proposedNew.push({ parentKey: "__ROOT__", name: numberedFallback });
+          reason = `Modo offline: sem correspondência forte — sugerindo pasta "${numberedFallback}".`;
         }
       }
     } else {
@@ -466,7 +549,7 @@ var EixosClassifier = (function () {
       `3. Use EXATAMENTE as chaves ("key") listadas em ESTRUTURA.\n` +
       `4. ${
         allowNew
-          ? `Se o item tratar de tema realmente novo que não se encaixe bem nas pastas existentes, proponha no máximo 1 nova subcoleção em "new_subcollections" (com "parent_key" de um eixo existente ou "__ROOT__").`
+          ? `Se o item tratar de tema realmente novo que não se encaixe bem nas pastas existentes, proponha no máximo 1 nova subcoleção em "new_subcollections" (com "parent_key" de um eixo existente ou "__ROOT__"). Use numeração no padrão "01 - Nome do Eixo" para novos eixos na raiz (ou "N.M Nome do Subtema" dentro de um eixo numerado).`
           : `NÃO proponha novas subcoleções ("new_subcollections": []).`
       }\n` +
       `5. Responda EXCLUSIVAMENTE com JSON válido:\n` +
@@ -679,13 +762,20 @@ var EixosClassifier = (function () {
 
     const proposedNew = [];
     if (settings.allowCreateNew && Array.isArray(parsed.new_subcollections)) {
+      let nextRootNum = getNextRootAxisNumber(targetTree);
+      const eixoByKey = new Map((targetTree.eixos || []).map((e) => [e.key, e]));
+      let subOffset = 0;
       for (const ns of parsed.new_subcollections) {
         if (!ns || !ns.name || !String(ns.name).trim()) continue;
         const pKey =
           ns.parent_key && validEixoKeys.has(ns.parent_key) ? ns.parent_key : "__ROOT__";
+        const formattedName =
+          pKey === "__ROOT__"
+            ? formatNumberedAxisName(ns.name, nextRootNum++)
+            : formatNumberedSubtemaName(ns.name, eixoByKey.get(pKey), subOffset++);
         proposedNew.push({
           parentKey: pKey,
-          name: String(ns.name).trim(),
+          name: formattedName,
         });
       }
     }
@@ -915,8 +1005,8 @@ var EixosClassifier = (function () {
 
       for (const ns of res.proposedNew || []) {
         if (!ns || !ns.name) continue;
-        const normName = String(ns.name).trim();
-        const keyNorm = normName
+        const baseName = stripNumericPrefix(ns.name) || String(ns.name).trim();
+        const keyNorm = baseName
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
           .toLowerCase();
@@ -928,7 +1018,7 @@ var EixosClassifier = (function () {
           existingKey: null,
           parentKey: ns.parentKey || "__ROOT__",
           parentName: null,
-          name: normName,
+          name: baseName,
         });
         if (!g._seenIds.has(item.id)) {
           g._seenIds.add(item.id);
@@ -942,16 +1032,19 @@ var EixosClassifier = (function () {
       }
     }
 
-    const groups = Array.from(groupsMap.values())
-      .map((g) => {
-        delete g._seenIds;
-        return g;
-      })
-      .sort((a, b) => {
-        if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
-        if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
-        return b.items.length - a.items.length;
-      });
+    const groups = applyNumberingToNewGroups(
+      Array.from(groupsMap.values())
+        .map((g) => {
+          delete g._seenIds;
+          return g;
+        })
+        .sort((a, b) => {
+          if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
+          if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
+          return b.items.length - a.items.length;
+        }),
+      targetTree
+    );
 
     const newCount = groups.filter((g) => g.isNew).length;
     const existCount = groups.length - newCount;
@@ -1042,7 +1135,7 @@ var EixosClassifier = (function () {
           : "") +
         `3. ${
           allowNew
-            ? `Pode propor novos eixos ("existing_key": null, "name": "Nome em PT-BR"), reutilizando nomes já sugeridos quando couber.`
+            ? `Pode propor novos eixos ("existing_key": null, "name": "01 - Nome do Eixo" em PT-BR, sempre começando com numeração "01 - ", "02 - ", etc.), reutilizando nomes já sugeridos quando couber.`
             : `NÃO proponha novos eixos; use apenas "existing_key".`
         }\n` +
         `4. Responda EXCLUSIVAMENTE com JSON válido:\n` +
@@ -1066,7 +1159,7 @@ var EixosClassifier = (function () {
     const assignedIds = new Set();
 
     const normKey = (s) =>
-      String(s || "")
+      stripNumericPrefix(s)
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
@@ -1203,15 +1296,18 @@ var EixosClassifier = (function () {
     }
 
     const unassigned = itemsMeta.filter((it) => !assignedIds.has(it.id));
-    const groups = Array.from(groupsMap.values())
-      .map((g) => {
-        delete g._seen;
-        return g;
-      })
-      .sort((a, b) => {
-        if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
-        return b.items.length - a.items.length;
-      });
+    const groups = applyNumberingToNewGroups(
+      Array.from(groupsMap.values())
+        .map((g) => {
+          delete g._seen;
+          return g;
+        })
+        .sort((a, b) => {
+          if (Boolean(a.isManual) !== Boolean(b.isManual)) return a.isManual ? -1 : 1;
+          return b.items.length - a.items.length;
+        }),
+      targetTree
+    );
 
     const extraNote =
       reconciledFromOffline > 0

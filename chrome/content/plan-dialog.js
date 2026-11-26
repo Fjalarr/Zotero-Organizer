@@ -115,13 +115,35 @@
     }
   }
 
+  function getNextAxisNumber() {
+    let maxNum = 0;
+    for (const g of groupsState) {
+      const m = String(g.name || "").trim().match(/^(\d{1,2})\s*[-–—]/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    return maxNum > 0 ? maxNum + 1 : groupsState.length + 1;
+  }
+
+  function formatNumberedManualAxis(rawName) {
+    const clean = String(rawName || "").trim();
+    const existing = clean.match(/^(\d{1,2})\s*[-–—]\s*(.+)$/);
+    if (existing) {
+      return `${String(parseInt(existing[1], 10)).padStart(2, "0")} - ${existing[2].trim()}`;
+    }
+    return `${String(getNextAxisNumber()).padStart(2, "0")} - ${clean}`;
+  }
+
   function addManualAxis() {
     if (isExecuting || executionFinished) return;
     const inp = $("plan-manual-input");
-    const name = inp.value.trim();
-    if (!name) return;
+    const rawName = inp.value.trim();
+    if (!rawName) return;
 
-    const existing = groupsState.find((g) => normalizeText(g.name) === normalizeText(name));
+    const stripNum = (s) => normalizeText(String(s || "").replace(/^\d{1,2}\s*[-–—]\s*/, ""));
+    const existing = groupsState.find((g) => stripNum(g.name) === stripNum(rawName));
     if (existing) {
       existing.enabled = true;
       existing.isManual = true;
@@ -132,7 +154,8 @@
       return;
     }
 
-    const id = `manual:${Date.now()}:${normalizeText(name)}`;
+    const name = formatNumberedManualAxis(rawName);
+    const id = `manual:${Date.now()}:${stripNum(name)}`;
     groupsState.unshift({
       id,
       isNew: true,
