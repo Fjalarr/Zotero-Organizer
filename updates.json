@@ -4,7 +4,8 @@
       "updates": [
         {
           "version": "1.5.1",
-          "update_link": "https://github.com/Fjalarr/zotero-eixos-organizer/releases/download/v1.5.1/organizer-v1.5.1.xpi",
+          "update_link": "https://github.com/Fjalarr/Zotero-Organizer/releases/download/v1.5.1/organizer-v1.5.1.xpi",
+          "update_hash": "sha256:50bca5ae0b89a98f613078a1203e035eb6a332c9317aea1bd4ea1c2927cfecaf",
           "applications": {
             "zotero": {
               "strict_min_version": "7.0",
