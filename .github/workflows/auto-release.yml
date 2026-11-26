@@ -1,0 +1,93 @@
+name: Auto-Publish Release for Zotero Auto-Update
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate JavaScript syntax
+        run: |
+          for f in bootstrap.js src/*.js chrome/content/*.js; do
+            node --check "$f"
+          done
+
+      - name: Read manifest version and verify XPI / updates.json hash
+        id: meta
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, sys
+
+          with open("manifest.json", encoding="utf-8") as f:
+              mf = json.load(f)
+          version = mf["version"]
+          addon_id = mf["applications"]["zotero"]["id"]
+          xpi_name = f"organizer-v{version}.xpi"
+          xpi_path = os.path.join("dist", xpi_name)
+
+          if not os.path.exists(xpi_path):
+              print(f"ERROR: {xpi_path} not found. Run `python build.py` on dev before merging to main.", file=sys.stderr)
+              sys.exit(1)
+
+          with open(xpi_path, "rb") as f:
+              actual_hash = "sha256:" + hashlib.sha256(f.read()).hexdigest()
+
+          with open("updates.json", encoding="utf-8") as f:
+              upd = json.load(f)
+          entry = upd["addons"][addon_id]["updates"][0]
+          if entry["version"] != version:
+              print(f"ERROR: updates.json version ({entry['version']}) != manifest.json ({version})", file=sys.stderr)
+              sys.exit(1)
+          if entry.get("update_hash") != actual_hash:
+              print(f"ERROR: updates.json update_hash ({entry.get('update_hash')}) != actual ({actual_hash})", file=sys.stderr)
+              sys.exit(1)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"version={version}\n")
+              out.write(f"tag=v{version}\n")
+              out.write(f"xpi_name={xpi_name}\n")
+              out.write(f"xpi_path={xpi_path}\n")
+              out.write(f"sha256={actual_hash}\n")
+
+          print(f"Verified {xpi_path} ({actual_hash}) matches updates.json for v{version}")
+          PY
+
+      - name: Publish or update GitHub Release for Zotero Auto-Update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          XPI="${{ steps.meta.outputs.xpi_path }}"
+          TITLE="${TAG} — Organizer"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — updating asset so Zotero SHA-256 matches updates.json..."
+            gh release upload "$TAG" "$XPI" --clobber
+          else
+            echo "Creating new release $TAG for automatic Zotero updates..."
+            gh release create "$TAG" "$XPI" \
+              --title "$TITLE" \
+              --generate-notes \
+              --target main
+          fi

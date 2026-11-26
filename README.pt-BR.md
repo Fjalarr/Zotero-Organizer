@@ -183,10 +183,11 @@ python build.py
 
 Validação rápida de sintaxe de todos os scripts:
 
-### Fluxo de Branches e Releases
+### Fluxo de Branches, Atualização Automática e Releases
 
-- **`dev` (Branch de desenvolvimento):** todas as alterações, correções e Pull Requests **devem ir primeiro para `dev`**.
-- **`main` (Branch protegida de produção):** só recebe código via Pull Request de **`dev` → `main`** após revisão e aprovação do mantenedor, garantindo que cada release pública esteja validada.
+- **`dev` (Branch de desenvolvimento):** todas as alterações, correções e Pull Requests **devem ir primeiro para `dev`**. Ao rodar `python build.py`, o script gera `dist/organizer-v<versão>.xpi` e atualiza automaticamente o `updates.json` com a nova versão, link da release e hash criptográfico **SHA-256 (`update_hash`)**.
+- **`main` (Branch protegida de produção):** só recebe código via Pull Request de **`dev` → `main`** após revisão e aprovação do mantenedor.
+- **Atualização automática no Zotero:** sempre que um PR é aprovado e mesclado na `main`, o GitHub Actions (`.github/workflows/auto-release.yml`) valida os scripts e o hash SHA-256 e publica automaticamente a Release **`v<versão> — Organizer`** com o `.xpi` anexado. Os Zoteros que já têm o plugin instalado consultam `updates.json` na `main` via `update_url`, verificam o SHA-256 e **atualizam automaticamente** (ou imediatamente em **Ferramentas → Plugins → ⚙️ → Verificar atualizações**).
 
 ```powershell
 node --check bootstrap.js

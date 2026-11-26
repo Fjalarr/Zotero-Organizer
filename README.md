@@ -183,10 +183,11 @@ python build.py
 
 Quick syntax check for all scripts:
 
-### Branching & Release Workflow
+### Branching, Auto-Update & Release Workflow
 
-- **`dev` (Development branch):** all new features, bug fixes, and community Pull Requests **must target `dev` first**.
-- **`main` (Protected Release branch):** updated exclusively via Pull Request from **`dev` → `main`** after maintainer review and approval, ensuring every public release is verified before distribution.
+- **`dev` (Development branch):** all new features, bug fixes, and community Pull Requests **must target `dev` first**. Running `python build.py` compiles `dist/organizer-v<version>.xpi` and automatically updates `updates.json` with the new version, release URL, and **SHA-256 `update_hash`**.
+- **`main` (Protected Release branch):** updated exclusively via Pull Request from **`dev` → `main`** after maintainer review and approval.
+- **Automatic Zotero Updates:** whenever a PR is merged into `main`, GitHub Actions (`.github/workflows/auto-release.yml`) automatically verifies the scripts and SHA-256 hash and publishes the **`v<version> — Organizer`** GitHub Release with `organizer-v<version>.xpi`. Installed Zotero instances check `updates.json` on `main` via `applications.zotero.update_url`, validate the SHA-256 hash, and update automatically (or immediately via **Tools → Plugins → ⚙️ → Check for Updates**).
 
 ```powershell
 node --check bootstrap.js
