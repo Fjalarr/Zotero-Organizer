@@ -84,7 +84,7 @@ var EixosMain = (function () {
     return k;
   }
 
-  function openInteractiveDialog(item, rule, targetTree, initialClassification, settings) {
+  function openInteractiveDialog(item, rule, targetTree, initialClassification, settings, batchInfo) {
     const win = getActiveWindow();
     if (!win) return null;
 
@@ -96,6 +96,8 @@ var EixosMain = (function () {
       targetTree,
       classification: initialClassification,
       settings,
+      batchIndex: batchInfo ? batchInfo.index : 1,
+      batchTotal: batchInfo ? batchInfo.total : 1,
       allowCreateNew: Boolean(settings.allowCreateNew && rule.allowCreateNew !== false),
       reclassify: async (forceEngine) => {
         const latestSettings = EixosConfig.getSettings();
@@ -144,9 +146,21 @@ var EixosMain = (function () {
     let newSubcollections = classification.proposedNew || [];
 
     if (useInteractive) {
-      const dialogResult = openInteractiveDialog(item, rule, targetTree, classification, effectiveSettings);
-      if (!dialogResult || !dialogResult.confirmed) {
-        return { status: "cancelled" };
+      const dialogResult = openInteractiveDialog(
+        item,
+        rule,
+        targetTree,
+        classification,
+        effectiveSettings,
+        opts.batchInfo
+      );
+      // Closing via window X or Escape leaves dialogResult === null (or action === "abort"):
+      // stop the current batch/queue immediately instead of reopening for the next item.
+      if (!dialogResult || dialogResult.action === "abort") {
+        return { status: "aborted" };
+      }
+      if (!dialogResult.confirmed) {
+        return { status: "skipped_one" };
       }
       selectedKeys = dialogResult.selectedKeys || [];
       newSubcollections = dialogResult.newSubcollections || [];
@@ -217,12 +231,22 @@ var EixosMain = (function () {
     if (isProcessingQueue) return;
     isProcessingQueue = true;
     try {
+      let processed = 0;
+      const initialTotal = queue.length;
       while (queue.length > 0) {
         const task = queue.shift();
+        processed++;
         try {
           const item = await Zotero.Items.getAsync(task.itemID);
           if (!item || item.deleted) continue;
-          await processSingleItem(item, task.rule, { force: false });
+          const res = await processSingleItem(item, task.rule, {
+            force: false,
+            batchInfo: { index: processed, total: Math.max(initialTotal, processed + queue.length) },
+          });
+          if (res && res.status === "aborted") {
+            queue = [];
+            break;
+          }
         } catch (err) {
           Zotero.debug("EixosMain.drainQueue item error: " + err);
           showToast("Eixos Organizer — Aviso", [String(err.message || err)], 6000);
@@ -277,7 +301,8 @@ var EixosMain = (function () {
     }
 
     const selectedCol = pane.getSelectedCollection();
-    for (const item of items) {
+    for (let idx = 0; idx < items.length; idx++) {
+      const item = items[idx];
       let rule = null;
       if (selectedCol) {
         rule = EixosConfig.findRuleForSourceCollection(selectedCol.key, selectedCol.libraryID);
@@ -300,7 +325,14 @@ var EixosMain = (function () {
       }
 
       try {
-        await processSingleItem(item, rule, { force: true, forceInteractive: true });
+        const res = await processSingleItem(item, rule, {
+          force: true,
+          forceInteractive: true,
+          batchInfo: { index: idx + 1, total: items.length },
+        });
+        if (res && res.status === "aborted") {
+          break;
+        }
       } catch (err) {
         showToast("Eixos Organizer — Erro", [String(err.message || err)], 6000);
       }
@@ -328,7 +360,7 @@ var EixosMain = (function () {
     }
 
     const settings = EixosConfig.getSettings();
-    const { pending } = await EixosOrganizer.getPendingItemsInSource(
+    const { pending, targetTree } = await EixosOrganizer.getPendingItemsInSource(
       col.libraryID,
       rule.sourceKey,
       rule.targetRootKey,
@@ -344,8 +376,27 @@ var EixosMain = (function () {
       return;
     }
 
+    const allowCreateEffective = Boolean(settings.allowCreateNew && rule.allowCreateNew !== false);
+    if (
+      settings.mode === "auto" &&
+      (!targetTree.leaves || targetTree.leaves.length === 0) &&
+      !allowCreateEffective
+    ) {
+      showToast(
+        "Eixos Organizer — Aviso",
+        [
+          `A pasta destino “${targetTree.root.name}” está vazia e a criação de novas subcoleções está desativada.`,
+          "Ative 'Permitir sugerir/criar novas subcoleções' nas configurações ou crie os eixos iniciais.",
+        ],
+        7000
+      );
+      return;
+    }
+
     let linked = 0;
     let skipped = 0;
+    let aborted = false;
+    const createdFolders = new Set();
     const silentToast = pending.length > 3;
 
     if (silentToast && settings.mode === "auto") {
@@ -356,24 +407,38 @@ var EixosMain = (function () {
       );
     }
 
-    for (const item of pending) {
+    for (let idx = 0; idx < pending.length; idx++) {
+      const item = pending[idx];
       try {
         const res = await processSingleItem(item, rule, {
           force: true,
           silentToast,
+          batchInfo: { index: idx + 1, total: pending.length },
         });
-        if (res.status === "linked") linked++;
-        else skipped++;
+        if (res.status === "aborted") {
+          aborted = true;
+          break;
+        }
+        if (res.status === "linked") {
+          linked++;
+          if (res.applied && Array.isArray(res.applied.createdNames)) {
+            for (const n of res.applied.createdNames) createdFolders.add(n);
+          }
+        } else {
+          skipped++;
+        }
       } catch (err) {
         Zotero.debug("EixosMain.classifyCollectionPending error: " + err);
         skipped++;
       }
     }
 
+    const createdPart =
+      createdFolders.size > 0 ? ` | ${createdFolders.size} nova(s) pasta(s) criada(s)` : "";
     showToast(
-      "Eixos Organizer — Lote concluído",
-      [`Coleção “${col.name}”: ${linked} vinculado(s), ${skipped} pulado(s)/inalterado(s).`],
-      6000
+      aborted ? "Eixos Organizer — Lote interrompido" : "Eixos Organizer — Lote concluído",
+      [`Coleção “${col.name}”: ${linked} vinculado(s), ${skipped} pulado(s)/inalterado(s)${createdPart}.`],
+      6500
     );
   }
 

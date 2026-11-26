@@ -42,26 +42,226 @@ var EixosClassifier = (function () {
     }
   }
 
-  function classifyOffline(itemMeta, targetTree, settings) {
-    const leaves = targetTree.leaves || [];
-    if (leaves.length === 0) {
-      return {
-        engineUsed: "offline",
-        selectedKeys: [],
-        proposedNew: [],
-        reason: "A coleção destino ainda não possui eixos/temas cadastrados.",
-        suggestNewHint: true,
-        scores: [],
-      };
-    }
+  const OFFLINE_TOPIC_SEEDS = [
+    {
+      name: "Teoria da História e Historiografia",
+      keywords: [
+        "historiografia", "historiography", "historiografico", "historicidade", "historicity",
+        "teoria", "koselleck", "hartog", "ricoeur", "benjamin", "bloch", "braudel", "white",
+        "conceitos", "conceptual", "temporalidade", "temporality", "presentismo", "anacronismo",
+        "metodologia", "methodology", "arquivos", "archive", "documento", "monumento", "fontes",
+        "narrativa", "epistemologia", "tempo", "passado", "passados", "historical",
+      ],
+    },
+    {
+      name: "Teoria Social, Filosofia Política e Capitalismo",
+      keywords: [
+        "marx", "marxismo", "marxism", "marxist", "gramsci", "capital", "capitalismo", "capitalism",
+        "capitalista", "economia", "economy", "economic", "politica", "political", "soberania",
+        "sovereignty", "estado", "state", "fascismo", "fascism", "neofascismo", "populismo",
+        "populism", "hegemonia", "hegemony", "ideologia", "ideology", "classe", "class",
+        "neoliberalismo", "neoliberalism", "liberalismo", "liberalism", "democracia", "democracy",
+        "biopoder", "necropolitica", "sociologia", "sociology", "filosofia", "philosophy",
+        "trabalho", "labor", "labour", "acumulacao", "reproducao", "burguesia", "proletariado",
+      ],
+    },
+    {
+      name: "Estudos Pós-Coloniais, Colonialismo e Imperialismo",
+      keywords: [
+        "colonial", "colonialismo", "colonialism", "pos-colonial", "postcolonial", "post-colonial",
+        "decolonial", "descolonial", "imperialismo", "imperialism", "imperio", "empire", "imperial",
+        "subalterno", "subaltern", "orientalismo", "orientalism", "eurocentrismo", "eurocentrism",
+        "metropole", "colonia", "colony", "settler", "povoamento", "terceiro", "global", "south",
+        "sul", "anticolonial", "anti-colonial", "descolonizacao", "decolonization", "spivak",
+        "said", "fanon", "mbembe", "chakrabarty", "prakash", "bhabha",
+      ],
+    },
+    {
+      name: "Ásia Oriental, Japão e Coreia",
+      keywords: [
+        "japao", "japan", "japanese", "japones", "japonesa", "coreia", "korea", "korean", "coreano",
+        "coreana", "china", "chinese", "chines", "asia", "asian", "asiatico", "east", "manchuria",
+        "manchukuo", "taiwan", "okinawa", "hiroshima", "nagasaki", "toquio", "tokyo", "seoul",
+        "meiji", "showa", "pacifico", "pacific", "pan-asianism", "ienaga", "maruyama", "dower",
+        "chosen", "joseon", "oriental", "nippon",
+      ],
+    },
+    {
+      name: "Memória, Trauma e Justiça de Transição",
+      keywords: [
+        "memoria", "memory", "memories", "trauma", "traumatic", "traumatico", "testemunho",
+        "testimony", "witness", "witnesses", "testify", "esquecimento", "forgetting", "luto",
+        "silencio", "silence", "justica", "justice", "transicao", "transitional", "tribunal",
+        "tribunals", "court", "crimes", "crime", "reparacao", "reparacoes", "reparation",
+        "reparations", "comissao", "verdade", "truth", "anistia", "ditadura", "dictatorship",
+        "holocausto", "holocaust", "genocidio", "genocide", "nuremberg", "hague", "haia",
+        "impunidade", "impunity", "vitimas", "victims", "responsabilidade", "perlaboracao",
+        "war", "guerra", "atrocidades", "atrocities", "sierra", "leone",
+      ],
+    },
+    {
+      name: "Gênero, Feminismo e Violência Sexual",
+      keywords: [
+        "genero", "gender", "mulher", "mulheres", "woman", "women", "feminismo", "feminism",
+        "feminista", "feminist", "sexual", "sexualidade", "sexuality", "estupro", "rape",
+        "conforto", "comfort", "wianbu", "ianfu", "prostitution", "prostituicao", "escravidao",
+        "slavery", "interseccionalidade", "intersectionality", "patriarcado", "patriarchy",
+        "maternidade", "maternal", "maes", "corpo", "body", "violencia", "violence", "shame",
+        "vergonha", "masculinidade", "feminino", "queer", "hooks", "butler", "federici",
+      ],
+    },
+    {
+      name: "Escravidão, Raça e Mundo Atlântico",
+      keywords: [
+        "escravidao", "slavery", "escravo", "escravos", "slave", "slaves", "abolição", "abolicao",
+        "abolition", "alforria", "atlantico", "atlantic", "raca", "race", "racial", "racismo",
+        "racism", "negro", "negros", "black", "africa", "african", "africano", "afro", "casta",
+        "caste", "diaspora", "plantation", "trafico", "marquese", "hartman", "gilroy",
+      ],
+    },
+    {
+      name: "História do Brasil e da América Latina",
+      keywords: [
+        "brasil", "brazil", "brazilian", "brasileiro", "brasileira", "america", "latina", "latin",
+        "ibero", "ibero-americano", "rio", "janeiro", "paulo", "bahia", "minas", "nordeste",
+        "argentina", "mexico", "chile", "cuba", "peru", "colombia", "uruguai", "paraguai",
+        "vargas", "republica", "imperio", "independencia", "cnv", "indigena", "indigenas",
+        "sertão", "sertao", "amazonia", "pernambuco", "fluminense",
+      ],
+    },
+    {
+      name: "Cultura, Cinema, Literatura e Artes",
+      keywords: [
+        "cultura", "culture", "cultural", "cinema", "film", "filme", "filmes", "imagem", "imagens",
+        "image", "images", "estetica", "aesthetics", "arte", "artes", "art", "literatura",
+        "literature", "literario", "romance", "poesia", "musica", "music", "teatro", "midia",
+        "media", "imprensa", "jornalismo", "costumes", "mentalidades", "imaginario", "simbolo",
+        "fotografia", "photography", "visual", "religiao", "religion", "sagrado", "demonios",
+        "demons", "bruxaria", "romaria", "sincretismo",
+      ],
+    },
+    {
+      name: "Educação, Ensino de História e Pedagogia",
+      keywords: [
+        "educacao", "education", "educational", "ensino", "teaching", "didatica", "didactics",
+        "pedagogia", "pedagogy", "escola", "school", "escolar", "curriculo", "curriculum",
+        "livro", "didatico", "textbook", "textbooks", "professor", "professores", "docente",
+        "docencia", "aprendizagem", "learning", "saber", "universidade", "freire", "charlot",
+      ],
+    },
+    {
+      name: "Oriente Médio, Conflitos e História Global",
+      keywords: [
+        "palestina", "palestine", "palestinian", "israel", "israeli", "nakba", "sionismo",
+        "zionist", "oriente", "middle", "east", "arabe", "arab", "islam", "islamico",
+        "medieval", "antiguidade", "europa", "europe", "european", "alemanha", "germany",
+        "franca", "france", "italia", "italy", "russia", "soviet", "uniao", "estados", "unidos",
+        "united", "states", "guerra", "fria", "cold", "war", "internacional", "international",
+      ],
+    },
+  ];
 
-    // Build item token vector
+  function scoreAgainstTopicSeeds(itemVec, maxTargets) {
+    const scored = [];
+    for (const seed of OFFLINE_TOPIC_SEEDS) {
+      const kwSet = new Set(seed.keywords.map((k) => tokenize(k)[0]).filter(Boolean));
+      let score = 0;
+      const matched = [];
+      for (const [tok, weight] of itemVec.entries()) {
+        if (kwSet.has(tok)) {
+          score += weight;
+          matched.push({ tok, weight });
+        }
+      }
+      if (score > 0) {
+        matched.sort((a, b) => b.weight - a.weight);
+        scored.push({
+          seed,
+          score,
+          matchedTerms: matched.slice(0, 4).map((m) => m.tok),
+        });
+      }
+    }
+    scored.sort((a, b) => b.score - a.score);
+    if (scored.length === 0) return [];
+    const top = scored[0].score;
+    const cutoff = Math.max(2.0, top * 0.55);
+    const chosen = [];
+    for (const s of scored) {
+      if (chosen.length >= Math.min(maxTargets || 3, 2)) break;
+      if (s.score >= cutoff || chosen.length === 0) {
+        chosen.push(s);
+      }
+    }
+    return chosen;
+  }
+
+  function findExistingLeafByName(leaves, name) {
+    const norm = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    const target = norm(name);
+    return (leaves || []).find((l) => norm(l.name) === target || norm(l.parentName) === target) || null;
+  }
+
+  function buildItemVector(itemMeta) {
     const itemVec = new Map();
     addWeightedTokens(itemVec, itemMeta.title, 3.5);
     addWeightedTokens(itemVec, (itemMeta.tags || []).join(" "), 2.5);
     addWeightedTokens(itemVec, itemMeta.abstractNote, 1.5);
     addWeightedTokens(itemVec, (itemMeta.creators || []).join(" "), 1.2);
     addWeightedTokens(itemVec, itemMeta.publicationTitle, 1.0);
+    return itemVec;
+  }
+
+  function classifyOffline(itemMeta, targetTree, settings) {
+    const leaves = targetTree.leaves || [];
+    const maxTargets = settings.maxTargets || 3;
+    const allowCreateNew = Boolean(settings.allowCreateNew);
+    const itemVec = buildItemVector(itemMeta);
+
+    if (leaves.length === 0) {
+      if (!allowCreateNew) {
+        return {
+          engineUsed: "offline",
+          selectedKeys: [],
+          proposedNew: [],
+          reason:
+            "A coleção destino está vazia e a criação de novas subcoleções está desativada.",
+          suggestNewHint: true,
+          scores: [],
+        };
+      }
+      const seedMatches = scoreAgainstTopicSeeds(itemVec, maxTargets);
+      if (seedMatches.length > 0) {
+        const terms = seedMatches[0].matchedTerms.join(", ");
+        return {
+          engineUsed: "offline",
+          selectedKeys: [],
+          proposedNew: seedMatches.map((m) => ({
+            parentKey: "__ROOT__",
+            name: m.seed.name,
+          })),
+          reason: `Modo offline (pasta destino vazia): novo eixo sugerido a partir de termos como "${terms}".`,
+          suggestNewHint: true,
+          scores: [],
+        };
+      }
+      const firstCleanTag = (itemMeta.tags || []).find((t) => String(t).trim().length >= 3);
+      const fallbackName = firstCleanTag ? String(firstCleanTag).trim() : "Geral e Outros Temas";
+      return {
+        engineUsed: "offline",
+        selectedKeys: [],
+        proposedNew: [{ parentKey: "__ROOT__", name: fallbackName }],
+        reason: `Modo offline (pasta destino vazia): criando eixo inicial "${fallbackName}".`,
+        suggestNewHint: true,
+        scores: [],
+      };
+    }
 
     // Build leaf token vectors & document frequency across leaves
     const leafVecs = [];
@@ -124,7 +324,6 @@ var EixosClassifier = (function () {
     }
 
     scored.sort((a, b) => b.score - a.score);
-    const maxTargets = settings.maxTargets || 3;
     const topScore = scored[0] ? scored[0].score : 0;
 
     const selected = [];
@@ -138,20 +337,51 @@ var EixosClassifier = (function () {
       }
     }
 
-    const suggestNewHint = topScore < 0.055;
+    const proposedNew = [];
     let reason = "";
+
     if (selected.length > 0) {
       const topTerms = selected[0].matchedTerms.slice(0, 4).join(", ");
       reason = `Modo offline (similaridade textual): termos em comum como "${topTerms || "título/tema"}".`;
+    } else if (allowCreateNew) {
+      const seedMatches = scoreAgainstTopicSeeds(itemVec, maxTargets);
+      for (const m of seedMatches) {
+        const existing = findExistingLeafByName(leaves, m.seed.name);
+        if (existing) {
+          if (!selected.some((s) => s.key === existing.key)) {
+            selected.push({ key: existing.key, name: existing.name, matchedTerms: m.matchedTerms });
+          }
+        } else {
+          proposedNew.push({ parentKey: "__ROOT__", name: m.seed.name });
+        }
+      }
+      if (selected.length > 0 || proposedNew.length > 0) {
+        const terms = seedMatches[0] ? seedMatches[0].matchedTerms.join(", ") : "";
+        reason =
+          proposedNew.length > 0
+            ? `Modo offline: novo eixo sugerido a partir de termos como "${terms}".`
+            : `Modo offline: correspondência temática com "${terms}".`;
+      } else {
+        const existingFallback = findExistingLeafByName(leaves, "Geral e Outros Temas");
+        if (existingFallback) {
+          selected.push({ key: existingFallback.key, name: existingFallback.name, matchedTerms: [] });
+          reason = `Modo offline: sem correspondência forte — encaminhado para "${existingFallback.name}".`;
+        } else {
+          proposedNew.push({ parentKey: "__ROOT__", name: "Geral e Outros Temas" });
+          reason = 'Modo offline: sem correspondência forte — sugerindo pasta "Geral e Outros Temas".';
+        }
+      }
     } else {
       reason =
         "Modo offline: pouca correspondência com os temas atuais — você pode selecionar manualmente ou criar um novo tema.";
     }
 
+    const suggestNewHint = topScore < 0.055 || proposedNew.length > 0;
+
     return {
       engineUsed: "offline",
       selectedKeys: selected.map((s) => s.key),
-      proposedNew: [],
+      proposedNew,
       reason,
       suggestNewHint,
       scores: scored.slice(0, 6),

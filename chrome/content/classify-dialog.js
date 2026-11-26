@@ -232,7 +232,20 @@
     if (meta.year) metaParts.push(meta.year);
     if (meta.publicationTitle) metaParts.push(meta.publicationTitle);
     $("dlg-meta").textContent = metaParts.join(" • ");
-    $("dlg-route").textContent = `${args.sourceName}  →  ${args.targetTree.root.name}`;
+    const progressSuffix =
+      args.batchTotal && args.batchTotal > 1
+        ? `   •   Item ${args.batchIndex || 1} de ${args.batchTotal}`
+        : "";
+    $("dlg-route").textContent = `${args.sourceName}  →  ${args.targetTree.root.name}${progressSuffix}`;
+
+    const abortBtn = $("dlg-btn-abort");
+    if (abortBtn && args.batchTotal && args.batchTotal > 1) {
+      abortBtn.style.display = "inline-block";
+      abortBtn.addEventListener("click", () => {
+        args.result = { confirmed: false, action: "abort" };
+        window.close();
+      });
+    }
 
     if (!args.allowCreateNew) {
       $("dlg-new-box").style.display = "none";
@@ -269,17 +282,25 @@
     $("dlg-btn-re-off").addEventListener("click", () => runReclassify("offline"));
 
     $("dlg-btn-cancel").addEventListener("click", () => {
-      args.result = { confirmed: false };
+      args.result = { confirmed: false, action: "skip" };
       window.close();
     });
 
     $("dlg-btn-confirm").addEventListener("click", () => {
       args.result = {
         confirmed: true,
+        action: "confirm",
         selectedKeys: Array.from(selectedKeys),
         newSubcollections: newSubcollections.slice(),
       };
       window.close();
+    });
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") {
+        args.result = { confirmed: false, action: "abort" };
+        window.close();
+      }
     });
   }
 

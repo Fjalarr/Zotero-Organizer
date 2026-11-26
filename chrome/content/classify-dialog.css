@@ -275,6 +275,11 @@ html, body {
   font-weight: 600;
 }
 
+.dlg-btn-danger {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
 .dlg-empty {
   font-size: 12px;
   opacity: 0.75;
