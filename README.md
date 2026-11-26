@@ -56,7 +56,7 @@ When you maintain general collections in Zotero (such as `Books`, `Articles & Th
 
 Compatible with **Zotero 7, 8, and 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Download **`organizer-v1.5.1.xpi`** from [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) or from [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
+1. Download **`organizer-v1.5.1.xpi`** from [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases/latest) or from [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
 2. In Zotero, open **Tools → Plugins** (*Ferramentas → Plugins*).
 3. Click the **gear icon** in the top-right corner and choose **Install Plugin From File…** (*Instalar plugin a partir de arquivo…*).
 4. Select **`organizer-v1.5.1.xpi`**.
@@ -141,7 +141,7 @@ Use **Test AI Connection** in Settings to verify your provider and model name be
 ## Project Architecture
 
 ```text
-zotero-eixos-organizer/
+Zotero-Organizer/
 ├── manifest.json                     # Add-on metadata (Zotero 7–10, Organizer v1.5.0)
 ├── updates.json                      # Self-hosted update manifest (update_url)
 ├── chrome.manifest                   # Content & locale registration (en-US / pt-BR)
@@ -168,7 +168,7 @@ zotero-eixos-organizer/
     └── organizer-v1.5.1.xpi          # Current stable build ready for Zotero installation
 ```
 
-> **Note on `dist/`:** Starting with `v1.5.0`, `dist/` keeps only the latest stable `.xpi` package to keep the repository lightweight. All historical `.xpi` builds (`v1.0.0` – `v1.4.2`) remain archived and downloadable in [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases).
+> **Note on `dist/`:** Starting with `v1.5.0`, `dist/` keeps only the latest stable `.xpi` package to keep the repository lightweight. All historical `.xpi` builds (`v1.0.0` – `v1.4.2`) remain archived and downloadable in [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases).
 
 ---
 
@@ -205,19 +205,19 @@ node --check chrome/content/classify-dialog.js
 
 ## Version History
 
-Every release is tracked via Git tags and [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases):
+Every release is tracked via Git tags and [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases):
 
 | Version | Date | Release / Commit | Package `.xpi` | Summary |
 |---|---|---|---|---|
-| **`v1.5.1`** *(stable)* | 2026-11-26 | [`v1.5.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Encrypted local API key vault**: encrypts AI API keys locally via Zotero/Gecko **NSS (`key4.db`)** with **AES-256-GCM** fallback, auto-migrates & wipes legacy plaintext prefs, moves Gemini API key to `x-goog-api-key` HTTP header, sanitizes secrets from error logs, adds **Clear Key** button & vault badge, strengthens `.gitignore`, and establishes the **`dev` → PR → `main`** workflow |
-| **`v1.5.0`** | 2026-11-26 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **First stable public release**: renamed to **Organizer**, full live **English / Portuguese (PT-BR)** language switcher in Settings (UI, dialogs, notifications, offline seeds & AI prompts), bilingual `README.md` + `README.pt-BR.md`, and clean `dist/` keeping only the current build |
-| **`v1.4.2`** | 2026-11-26 | [`v1.4.2`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Fixed modal `saveTx()` deadlock during plan execution (switched `plan-dialog` to non-modal with live progress), fixed Gecko `<select>` text overlap in expanded item lists, and eliminated numbering gaps |
-| **`v1.4.1`** | 2026-11-26 | [`v1.4.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Standardized sequential numbering (`01 - Topic`, `02 - Topic`, and `N.M Subtopic`) across offline, AI, and manual plan axes with prefix-aware deduplication |
-| **`v1.4.0`** | 2026-11-26 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Hybrid AI + keyword cross-check, full parent-item metadata resolution (DOI/ISBN/publisher/series), faster Gemini calls (`thinkingConfig` + parallel chunks), reliable retry delivery, manual indices inside Plan Preview, and live Zotero DB verification before closing |
-| **`v1.3.0`** | 2026-11-26 | [`v1.3.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.3.0) (`852b664`, `45d3123`) | *GitHub Release* | Single-screen Batch Plan Preview (`plan-dialog`), automatic creation/reuse of `<Parent> - Por Eixo e Tema` without manual empty folders, real-time auto-linking with notifications, and respect for manually placed items |
-| **`v1.2.0`** | 2026-11-26 | [`v1.2.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.2.0) (`e94fe5b`) | *GitHub Release* | Window `X` / `Esc` / `Cancel Batch` aborts batch immediately without reopening; offline engine auto-creates starter thematic axes on empty destination folders |
-| **`v1.1.0`** | 2026-11-26 | [`v1.1.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.1.0) (`24b80ef`) | *GitHub Release* | Zotero 10.0.8 install compatibility (`applications.zotero.update_url` + `updates.json` + `registerChrome`), fixed Zotero 10 `Cu.Sandbox` scope bug in Preferences, updated author to **Daniel Barreto**, and versioned builds |
-| **`v1.0.0`** | 2026-11-26 | [`v1.0.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.0.0) (`831f957`) | *GitHub Release* | Initial release of `Eixos Organizer` (hybrid AI + offline engine, interactive single-item dialog, preferences pane, menus, and 100% non-destructive design) |
+| **`v1.5.1`** *(stable)* | 2026-11-26 | [`v1.5.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Encrypted local API key vault**: encrypts AI API keys locally via Zotero/Gecko **NSS (`key4.db`)** with **AES-256-GCM** fallback, auto-migrates & wipes legacy plaintext prefs, moves Gemini API key to `x-goog-api-key` HTTP header, sanitizes secrets from error logs, adds **Clear Key** button & vault badge, strengthens `.gitignore`, and establishes the **`dev` → PR → `main`** workflow |
+| **`v1.5.0`** | 2026-11-26 | [`v1.5.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **First stable public release**: renamed to **Organizer**, full live **English / Portuguese (PT-BR)** language switcher in Settings (UI, dialogs, notifications, offline seeds & AI prompts), bilingual `README.md` + `README.pt-BR.md`, and clean `dist/` keeping only the current build |
+| **`v1.4.2`** | 2026-11-26 | [`v1.4.2`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Fixed modal `saveTx()` deadlock during plan execution (switched `plan-dialog` to non-modal with live progress), fixed Gecko `<select>` text overlap in expanded item lists, and eliminated numbering gaps |
+| **`v1.4.1`** | 2026-11-26 | [`v1.4.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Standardized sequential numbering (`01 - Topic`, `02 - Topic`, and `N.M Subtopic`) across offline, AI, and manual plan axes with prefix-aware deduplication |
+| **`v1.4.0`** | 2026-11-26 | [`v1.4.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Hybrid AI + keyword cross-check, full parent-item metadata resolution (DOI/ISBN/publisher/series), faster Gemini calls (`thinkingConfig` + parallel chunks), reliable retry delivery, manual indices inside Plan Preview, and live Zotero DB verification before closing |
+| **`v1.3.0`** | 2026-11-26 | [`v1.3.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.3.0) (`852b664`, `45d3123`) | *GitHub Release* | Single-screen Batch Plan Preview (`plan-dialog`), automatic creation/reuse of `<Parent> - Por Eixo e Tema` without manual empty folders, real-time auto-linking with notifications, and respect for manually placed items |
+| **`v1.2.0`** | 2026-11-26 | [`v1.2.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.2.0) (`e94fe5b`) | *GitHub Release* | Window `X` / `Esc` / `Cancel Batch` aborts batch immediately without reopening; offline engine auto-creates starter thematic axes on empty destination folders |
+| **`v1.1.0`** | 2026-11-26 | [`v1.1.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.1.0) (`24b80ef`) | *GitHub Release* | Zotero 10.0.8 install compatibility (`applications.zotero.update_url` + `updates.json` + `registerChrome`), fixed Zotero 10 `Cu.Sandbox` scope bug in Preferences, updated author to **Daniel Barreto**, and versioned builds |
+| **`v1.0.0`** | 2026-11-26 | [`v1.0.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.0.0) (`831f957`) | *GitHub Release* | Initial release of `Eixos Organizer` (hybrid AI + offline engine, interactive single-item dialog, preferences pane, menus, and 100% non-destructive design) |
 
 ### Detailed Release Notes
 

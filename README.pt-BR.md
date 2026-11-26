@@ -56,7 +56,7 @@ Quando você mantém coleções gerais no Zotero (por exemplo, `Livros`, `Artigo
 
 Compatível com **Zotero 7, 8 e 10** (`strict_min_version: 7.0`, `strict_max_version: 10.*`).
 
-1. Baixe **`organizer-v1.5.1.xpi`** em [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases/latest) ou na pasta [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
+1. Baixe **`organizer-v1.5.1.xpi`** em [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases/latest) ou na pasta [`dist/organizer-v1.5.1.xpi`](dist/organizer-v1.5.1.xpi).
 2. No Zotero, abra **Ferramentas → Plugins** (*Tools → Plugins*).
 3. Clique no ícone de **engrenagem** no canto superior direito e escolha **Instalar plugin a partir de arquivo…** (*Install Plugin From File…*).
 4. Selecione o arquivo **`organizer-v1.5.1.xpi`**.
@@ -141,7 +141,7 @@ Use o botão **Testar Conexão com IA** nas configurações para validar a chave
 ## Arquitetura do projeto
 
 ```text
-zotero-eixos-organizer/
+Zotero-Organizer/
 ├── manifest.json                     # Metadados do plugin (Zotero 7–10, Organizer v1.5.0)
 ├── updates.json                      # Manifesto de atualizações (update_url)
 ├── chrome.manifest                   # Registro de conteúdo e idiomas (pt-BR / en-US)
@@ -168,7 +168,7 @@ zotero-eixos-organizer/
     └── organizer-v1.5.1.xpi          # Build estável atual pronta para instalação no Zotero
 ```
 
-> **Nota sobre `dist/`:** a partir da `v1.5.0`, a pasta `dist/` mantém apenas o pacote `.xpi` da versão atual para manter o repositório enxuto. Todas as builds antigas (`v1.0.0` – `v1.4.2`) continuam arquivadas e disponíveis para download em [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases).
+> **Nota sobre `dist/`:** a partir da `v1.5.0`, a pasta `dist/` mantém apenas o pacote `.xpi` da versão atual para manter o repositório enxuto. Todas as builds antigas (`v1.0.0` – `v1.4.2`) continuam arquivadas e disponíveis para download em [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases).
 
 ---
 
@@ -205,19 +205,19 @@ node --check chrome/content/classify-dialog.js
 
 ## Histórico de versões
 
-Todas as versões possuem rastreio completo por commit, tag Git e [GitHub Releases](https://github.com/Fjalarr/zotero-eixos-organizer/releases):
+Todas as versões possuem rastreio completo por commit, tag Git e [GitHub Releases](https://github.com/Fjalarr/Zotero-Organizer/releases):
 
 | Versão | Data | Release / Commit | Pacote `.xpi` | Resumo da evolução |
 |---|---|---|---|---|
-| **`v1.5.1`** *(estável)* | 26/11/2026 | [`v1.5.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Cofre criptografado local para Chave de API**: criptografia local via **NSS (`key4.db`)** do Zotero/Gecko com fallback **AES-256-GCM**, migração e limpeza automática da preferência legada em texto puro, envio da chave Gemini no header `x-goog-api-key`, sanitização de segredos em logs de erro, botão **Limpar Chave**, `.gitignore` reforçado e fluxo **`dev` → PR → `main`** |
-| **`v1.5.0`** | 26/11/2026 | [`v1.5.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **Primeira versão estável pública**: renomeado para **Organizer**, seletor de idioma **Português (Brasil) / English / Automático** nas configurações (interface, janelas, notificações, vocabulário offline e IA), documentação bilíngue (`README.md` + `README.pt-BR.md`) e `dist/` enxuta apenas com a build atual |
-| **`v1.4.2`** | 26/11/2026 | [`v1.4.2`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Correção do deadlock modal na execução do plano (`openDialog` não-modal + progresso ao vivo), correção visual de textos sobrepostos na lista de itens e numeração sequencial sem lacunas |
-| **`v1.4.1`** | 26/11/2026 | [`v1.4.1`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Numeração automática padronizada (`01 - Tema`, `02 - Tema` e `N.M Subtema`) em eixos gerados offline, pela IA ou criados manualmente no plano |
-| **`v1.4.0`** | 26/11/2026 | [`v1.4.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Cruzamento IA + palavras-chave, metadados completos do item pai (DOI/ISBN/editora/série), API mais rápida (`thinkingConfig` + chunks paralelos), entrega garantida com retentativa, criação manual de índices no plano e verificação real no banco antes de fechar a janela |
-| **`v1.3.0`** | 26/11/2026 | [`v1.3.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.3.0) (`852b664`, `45d3123`) | *GitHub Release* | Plano completo em 1 única tela antes de executar, criação/reuso automático de `<Mãe> - Por Eixo e Tema` sem pasta vazia manual, tempo real automático com notificação e respeito à organização manual |
-| **`v1.2.0`** | 26/11/2026 | [`v1.2.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.2.0) (`e94fe5b`) | *GitHub Release* | Botão `X` / `Esc` / `Cancelar Lote` encerra lote imediatamente; motor offline cria eixos iniciais automaticamente em pastas destino vazias |
-| **`v1.1.0`** | 26/11/2026 | [`v1.1.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.1.0) (`24b80ef`) | *GitHub Release* | Correção de instalação no Zotero 10.0.8 (`update_url` + `registerChrome`), correção do escopo `Cu.Sandbox` nos botões de Configurações, autoria **Daniel Barreto** e builds versionadas |
-| **`v1.0.0`** | 26/11/2026 | [`v1.0.0`](https://github.com/Fjalarr/zotero-eixos-organizer/releases/tag/v1.0.0) (`831f957`) | *GitHub Release* | Lançamento inicial do `Eixos Organizer` (motor híbrido IA + offline, janela interativa, preferências e menus) |
+| **`v1.5.1`** *(estável)* | 26/11/2026 | [`v1.5.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.1) | `dist/organizer-v1.5.1.xpi` | **Cofre criptografado local para Chave de API**: criptografia local via **NSS (`key4.db`)** do Zotero/Gecko com fallback **AES-256-GCM**, migração e limpeza automática da preferência legada em texto puro, envio da chave Gemini no header `x-goog-api-key`, sanitização de segredos em logs de erro, botão **Limpar Chave**, `.gitignore` reforçado e fluxo **`dev` → PR → `main`** |
+| **`v1.5.0`** | 26/11/2026 | [`v1.5.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.5.0) (`66358b3`) | *GitHub Release* | **Primeira versão estável pública**: renomeado para **Organizer**, seletor de idioma **Português (Brasil) / English / Automático** nas configurações (interface, janelas, notificações, vocabulário offline e IA), documentação bilíngue (`README.md` + `README.pt-BR.md`) e `dist/` enxuta apenas com a build atual |
+| **`v1.4.2`** | 26/11/2026 | [`v1.4.2`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.2) (`1712f85`) | *GitHub Release* | Correção do deadlock modal na execução do plano (`openDialog` não-modal + progresso ao vivo), correção visual de textos sobrepostos na lista de itens e numeração sequencial sem lacunas |
+| **`v1.4.1`** | 26/11/2026 | [`v1.4.1`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.1) (`e6b4480`) | *GitHub Release* | Numeração automática padronizada (`01 - Tema`, `02 - Tema` e `N.M Subtema`) em eixos gerados offline, pela IA ou criados manualmente no plano |
+| **`v1.4.0`** | 26/11/2026 | [`v1.4.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.4.0) (`5ae20b5`) | *GitHub Release* | Cruzamento IA + palavras-chave, metadados completos do item pai (DOI/ISBN/editora/série), API mais rápida (`thinkingConfig` + chunks paralelos), entrega garantida com retentativa, criação manual de índices no plano e verificação real no banco antes de fechar a janela |
+| **`v1.3.0`** | 26/11/2026 | [`v1.3.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.3.0) (`852b664`, `45d3123`) | *GitHub Release* | Plano completo em 1 única tela antes de executar, criação/reuso automático de `<Mãe> - Por Eixo e Tema` sem pasta vazia manual, tempo real automático com notificação e respeito à organização manual |
+| **`v1.2.0`** | 26/11/2026 | [`v1.2.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.2.0) (`e94fe5b`) | *GitHub Release* | Botão `X` / `Esc` / `Cancelar Lote` encerra lote imediatamente; motor offline cria eixos iniciais automaticamente em pastas destino vazias |
+| **`v1.1.0`** | 26/11/2026 | [`v1.1.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.1.0) (`24b80ef`) | *GitHub Release* | Correção de instalação no Zotero 10.0.8 (`update_url` + `registerChrome`), correção do escopo `Cu.Sandbox` nos botões de Configurações, autoria **Daniel Barreto** e builds versionadas |
+| **`v1.0.0`** | 26/11/2026 | [`v1.0.0`](https://github.com/Fjalarr/Zotero-Organizer/releases/tag/v1.0.0) (`831f957`) | *GitHub Release* | Lançamento inicial do `Eixos Organizer` (motor híbrido IA + offline, janela interativa, preferências e menus) |
 
 ### Detalhes de cada versão
 
