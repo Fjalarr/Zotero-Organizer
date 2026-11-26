@@ -5,7 +5,7 @@
         {
           "version": "1.6.0",
           "update_link": "https://github.com/Fjalarr/Zotero-Organizer/releases/download/v1.6.0/organizer-v1.6.0.xpi",
-          "update_hash": "sha256:6b5271f1c1e2330649d5b4938142dd642f8179165e10d759e37301185a242822",
+          "update_hash": "sha256:9fc1ac799f623805020a12391e6d1696f6620e48ba2fee83271ee301de1fb1ec",
           "applications": {
             "zotero": {
               "strict_min_version": "7.0",

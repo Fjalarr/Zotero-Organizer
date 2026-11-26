@@ -568,9 +568,53 @@ var EixosClassifier = (function () {
     return null;
   }
 
+  const MAX_SUBTHEMES_PER_AXIS = 3;
+
+  /**
+   * Ensures no Level-1 axis exceeds MAX_SUBTHEMES_PER_AXIS (3) automatic Level-2 subthemes.
+   * If more than 3 non-manual subthemes exist under one axis, merges the tail into the 3rd bucket
+   * (or a General/Other subtheme) so zero items are ever dropped.
+   */
+  function enforceMaxSubthemesPerAxis(groups, settings) {
+    const subsByParent = new Map();
+    for (const g of groups) {
+      if (g.isSubtheme && g.parentGroupId && !g.isManual) {
+        if (!subsByParent.has(g.parentGroupId)) subsByParent.set(g.parentGroupId, []);
+        subsByParent.get(g.parentGroupId).push(g);
+      }
+    }
+
+    const removedIds = new Set();
+    for (const [parentId, subs] of subsByParent.entries()) {
+      if (subs.length <= MAX_SUBTHEMES_PER_AXIS) continue;
+      subs.sort((a, b) => b.items.length - a.items.length);
+      const keep = subs.slice(0, MAX_SUBTHEMES_PER_AXIS - 1);
+      const overflow = subs.slice(MAX_SUBTHEMES_PER_AXIS - 1);
+      const target = overflow[0];
+      const seen = new Set(target.items.map((it) => it.id));
+      for (let i = 1; i < overflow.length; i++) {
+        for (const it of overflow[i].items) {
+          if (!seen.has(it.id)) {
+            seen.add(it.id);
+            target.items.push(it);
+          }
+        }
+        removedIds.add(overflow[i].id);
+      }
+      // If multiple distinct themes were merged into the 3rd slot, give it a clear general label
+      if (overflow.length > 1) {
+        target.name = tr("generalSubthemeName", null, settings);
+      }
+      void keep;
+      void parentId;
+    }
+
+    return removedIds.size > 0 ? groups.filter((g) => !removedIds.has(g.id)) : groups;
+  }
+
   /**
    * Refines any large Level-1 axis (>= subthemeMinItems items) into Level-2 numbered subthemes
-   * when fine-grained 2-level filtering is enabled and >= 2 distinct subthemes emerge.
+   * (capped at MAX_SUBTHEMES_PER_AXIS = 3) when fine-grained 2-level filtering is enabled.
    */
   function subdivideAxisGroupsOffline(groups, targetTree, settings) {
     if (settings.enableSubthemes === false || settings.allowCreateNew === false) {
@@ -635,7 +679,22 @@ var EixosClassifier = (function () {
       // Only subdivide if at least 2 distinct subthemes have items
       if (buckets.size < 2) continue;
 
-      const sortedBuckets = Array.from(buckets.entries()).sort((a, b) => b[1].length - a[1].length);
+      let sortedBuckets = Array.from(buckets.entries()).sort((a, b) => b[1].length - a[1].length);
+      if (sortedBuckets.length > MAX_SUBTHEMES_PER_AXIS) {
+        const top = sortedBuckets.slice(0, MAX_SUBTHEMES_PER_AXIS - 1);
+        const tailItems = [];
+        const tailSeen = new Set();
+        for (const [, list] of sortedBuckets.slice(MAX_SUBTHEMES_PER_AXIS - 1)) {
+          for (const it of list) {
+            if (!tailSeen.has(it.id)) {
+              tailSeen.add(it.id);
+              tailItems.push(it);
+            }
+          }
+        }
+        top.push([tr("generalSubthemeName", null, settings), tailItems]);
+        sortedBuckets = top;
+      }
       for (const [subName, subItems] of sortedBuckets) {
         const normSub = subName
           .normalize("NFD")
@@ -1563,7 +1622,7 @@ var EixosClassifier = (function () {
 
     const runChunk = async (chunk, sharedNewAxes) => {
       const subthemeRule = enableSubthemes
-        ? `4. FINE-GRAINED 2-LEVEL SUBTHEMES: Whenever an axis receives ${subthemeMinItems} or more items, subdivide it into 2 to 4 specific numbered subthemes inside "subthemes" (e.g. "1.1 Feminist Theory", "1.2 Sexual Violence in Armed Conflicts") in ${outputLangLabel} and keep the parent axis's "item_ids": []. For axes with fewer than ${subthemeMinItems} items, keep "subthemes": [] and put items directly in "item_ids".\n` +
+        ? `4. FINE-GRAINED 2-LEVEL SUBTHEMES: Whenever an axis receives ${subthemeMinItems} or more items, subdivide it into 2 to 3 specific numbered subthemes (STRICT MAXIMUM of 3 subthemes per axis) inside "subthemes" (e.g. "1.1 Feminist Theory", "1.2 Sexual Violence in Armed Conflicts") in ${outputLangLabel} and keep the parent axis's "item_ids": []. For axes with fewer than ${subthemeMinItems} items, keep "subthemes": [] and put items directly in "item_ids".\n` +
           `5. Reply EXCLUSIVELY with valid JSON:\n` +
           `{"axes":[{"existing_key":null,"name":"01 - Axis Name","item_ids":[],"subthemes":[{"existing_key":null,"name":"1.1 Subtheme Name","item_ids":[1,2]}]}],"summary":"Short summary in ${outputLangLabel}."}\n\n`
         : `4. Reply EXCLUSIVELY with valid JSON:\n` +
@@ -1882,9 +1941,10 @@ var EixosClassifier = (function () {
         return cb - ca;
       });
 
-    // Safety net: subdivide any large flat axis that AI left unsplit when fine-grained filtering is on
+    // Safety net: subdivide any large flat axis that AI left unsplit, and enforce strict max 3 subthemes per axis
     const subdivided = subdivideAxisGroupsOffline(rawGroups, targetTree, settings);
-    const groups = applyNumberingToNewGroups(subdivided, targetTree);
+    const capped = enforceMaxSubthemesPerAxis(subdivided, settings);
+    const groups = applyNumberingToNewGroups(capped, targetTree);
 
     const rootAxesCount = groups.filter((g) => !g.isSubtheme).length;
     const subthemesCount = groups.filter((g) => g.isSubtheme).length;
