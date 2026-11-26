@@ -1,0 +1,14 @@
+eixos-organizer-tools-menu =
+    .label = Eixos Organizer
+eixos-organizer-tools-settings =
+    .label = Configure Managed Folders & AI…
+eixos-organizer-tools-classify-collection =
+    .label = Classify Pending Items in Current Collection
+eixos-organizer-tools-sync-config =
+    .label = Reload Synced Library Configuration
+eixos-organizer-item-classify =
+    .label = Eixos Organizer: Classify by Axis & Theme…
+eixos-organizer-collection-manage =
+    .label = Eixos Organizer: Manage this collection…
+eixos-organizer-collection-classify-pending =
+    .label = Eixos Organizer: Classify pending items in this collection

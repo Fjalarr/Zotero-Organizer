@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+  "name": "Eixos Organizer",
+  "version": "1.0.0",
+  "description": "Organiza automaticamente coleções do Zotero por eixos e temas com modo híbrido (IA + offline), janela interativa e configuração sincronizável entre usuários da biblioteca.",
+  "author": "Miguel Barreto",
+  "icons": {
+    "48": "chrome/content/icon.svg",
+    "96": "chrome/content/icon.svg"
+  },
+  "applications": {
+    "zotero": {
+      "id": "eixos-organizer@miguelbarreto.local",
+      "strict_min_version": "7.0",
+      "strict_max_version": "10.*"
+    }
+  }
+}

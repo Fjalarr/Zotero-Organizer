@@ -1,0 +1,201 @@
+.eixos-pref-root {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 12px 16px 24px 16px;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.eixos-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.eixos-subtitle {
+  margin: 0;
+  opacity: 0.78;
+  font-size: 12.5px;
+}
+
+.eixos-card {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(128, 128, 128, 0.04);
+}
+
+.eixos-card h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.eixos-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.eixos-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.eixos-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eixos-field-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.eixos-field label {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.eixos-field select,
+.eixos-field input[type="text"],
+.eixos-field input[type="password"],
+.eixos-field input[type="number"] {
+  padding: 6px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  background: Field;
+  color: FieldText;
+  font-size: 12.5px;
+}
+
+.eixos-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eixos-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.eixos-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eixos-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  background: rgba(128, 128, 128, 0.05);
+}
+
+.eixos-rule-disabled {
+  opacity: 0.55;
+}
+
+.eixos-rule-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.eixos-rule-title {
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.eixos-rule-meta {
+  font-size: 11.5px;
+  opacity: 0.75;
+}
+
+.eixos-add-rule {
+  padding-top: 8px;
+  border-top: 1px dashed rgba(128, 128, 128, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eixos-empty {
+  padding: 10px;
+  font-size: 12px;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.eixos-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.eixos-btn {
+  padding: 5px 11px;
+  border-radius: 5px;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  background: ButtonFace;
+  color: ButtonText;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.eixos-btn:hover {
+  filter: brightness(0.95);
+}
+
+.eixos-btn-primary {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.eixos-btn-danger {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.eixos-help {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.78;
+}
+
+.eixos-status {
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.eixos-ok {
+  color: #15803d;
+}
+
+.eixos-error {
+  color: #dc2626;
+}

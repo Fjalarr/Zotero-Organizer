@@ -1,0 +1,135 @@
+<vbox id="eixos-organizer-prefpane"
+      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      xmlns:html="http://www.w3.org/1999/xhtml"
+      onload="event.waitUntil(EixosPrefsPane.init())">
+  <html:div class="eixos-pref-root">
+    <html:div class="eixos-header">
+      <html:h2>Eixos Organizer — Classificação Automática por Eixo e Tema</html:h2>
+      <html:p class="eixos-subtitle">
+        100% não-destrutivo: nunca apaga itens, nunca remove da pasta original e nunca duplica arquivos.
+      </html:p>
+    </html:div>
+
+    <!-- 1. Pastas Gerenciadas -->
+    <html:section class="eixos-card">
+      <html:div class="eixos-card-head">
+        <html:h3>1. Pastas Gerenciadas (Origem → Árvore de Eixos e Temas)</html:h3>
+        <html:div class="eixos-btn-row">
+          <html:button id="eixos-btn-autodiscover" type="button" class="eixos-btn">Detectar Automaticamente</html:button>
+          <html:button id="eixos-btn-refresh-cols" type="button" class="eixos-btn">Atualizar Listas</html:button>
+        </html:div>
+      </html:div>
+
+      <html:div id="eixos-rules-list" class="eixos-rules-list"></html:div>
+
+      <html:div class="eixos-add-rule">
+        <html:div class="eixos-field">
+          <html:label for="eixos-new-source">Quando eu adicionar um item em:</html:label>
+          <html:select id="eixos-new-source"></html:select>
+        </html:div>
+        <html:div class="eixos-field">
+          <html:label for="eixos-new-target">Classificar na subcoleção temática:</html:label>
+          <html:select id="eixos-new-target"></html:select>
+        </html:div>
+        <html:div class="eixos-field eixos-field-inline">
+          <html:label class="eixos-check">
+            <html:input id="eixos-new-allow-create" type="checkbox" checked="checked" />
+            Permitir criar novo tema/subcoleção nesta regra
+          </html:label>
+          <html:button id="eixos-btn-add-rule" type="button" class="eixos-btn eixos-btn-primary">+ Adicionar Pasta Gerenciada</html:button>
+        </html:div>
+      </html:div>
+    </html:section>
+
+    <!-- 2. Comportamento -->
+    <html:section class="eixos-card">
+      <html:h3>2. Comportamento ao Adicionar Novo Item</html:h3>
+      <html:div class="eixos-grid-2">
+        <html:div class="eixos-field">
+          <html:label for="eixos-mode">Modo de operação:</html:label>
+          <html:select id="eixos-mode">
+            <html:option value="interactive">Interativo (abre janela para confirmar/editar em 1 clique)</html:option>
+            <html:option value="auto">Automático em segundo plano (vincula direto com notificação)</html:option>
+          </html:select>
+        </html:div>
+        <html:div class="eixos-field">
+          <html:label for="eixos-max-targets">Máximo de temas por item:</html:label>
+          <html:input id="eixos-max-targets" type="number" min="1" max="8" value="3" />
+        </html:div>
+      </html:div>
+      <html:div class="eixos-checks">
+        <html:label class="eixos-check">
+          <html:input id="eixos-allow-create" type="checkbox" />
+          Permitir sugerir/criar novas subcoleções quando surgir um tema novo
+        </html:label>
+        <html:label class="eixos-check">
+          <html:input id="eixos-skip-classified" type="checkbox" />
+          Ignorar itens que já estejam vinculados a algum eixo/tema da árvore destino (evita repetir após sync)
+        </html:label>
+      </html:div>
+    </html:section>
+
+    <!-- 3. Motor Híbrido (IA + Offline) -->
+    <html:section class="eixos-card">
+      <html:h3>3. Motor de Classificação (Híbrido: IA + Offline)</html:h3>
+      <html:div class="eixos-grid-2">
+        <html:div class="eixos-field">
+          <html:label for="eixos-engine">Motor:</html:label>
+          <html:select id="eixos-engine">
+            <html:option value="hybrid">Híbrido (usa IA se configurada; senão fallback offline)</html:option>
+            <html:option value="ai">Somente IA (erro se IA não estiver configurada)</html:option>
+            <html:option value="offline">Somente Offline (similaridade textual local, sem API)</html:option>
+          </html:select>
+        </html:div>
+        <html:div class="eixos-field">
+          <html:label for="eixos-provider">Provedor de IA:</html:label>
+          <html:select id="eixos-provider">
+            <html:option value="gemini">Google Gemini (AI Studio)</html:option>
+            <html:option value="openai">OpenAI (ChatGPT API)</html:option>
+            <html:option value="custom">Ollama / Endpoint compatível com OpenAI</html:option>
+          </html:select>
+        </html:div>
+      </html:div>
+
+      <html:div class="eixos-grid-2">
+        <html:div class="eixos-field">
+          <html:label for="eixos-apikey">Chave de API (salva apenas localmente neste PC):</html:label>
+          <html:input id="eixos-apikey" type="password" placeholder="Cole sua API key (ex.: AIza... ou sk-...)" />
+        </html:div>
+        <html:div class="eixos-field">
+          <html:label for="eixos-model">Modelo:</html:label>
+          <html:input id="eixos-model" type="text" placeholder="gemini-2.5-flash" />
+        </html:div>
+      </html:div>
+
+      <html:div id="eixos-endpoint-row" class="eixos-field">
+        <html:label for="eixos-endpoint">URL do endpoint (para Ollama / compatível com OpenAI):</html:label>
+        <html:input id="eixos-endpoint" type="text" placeholder="http://localhost:11434/v1/chat/completions" />
+      </html:div>
+
+      <html:div class="eixos-btn-row">
+        <html:button id="eixos-btn-test-ai" type="button" class="eixos-btn">Testar Conexão com IA</html:button>
+        <html:span id="eixos-ai-status" class="eixos-status"></html:span>
+      </html:div>
+    </html:section>
+
+    <!-- 4. Sincronização com equipe / WebDAV -->
+    <html:section class="eixos-card">
+      <html:h3>4. Compartilhamento entre Usuários (Zotero Sync / WebDAV)</html:h3>
+      <html:label class="eixos-check">
+        <html:input id="eixos-sync-library" type="checkbox" />
+        Sincronizar lista de pastas gerenciadas em uma nota da biblioteca (sem salvar chaves de API)
+      </html:label>
+      <html:p class="eixos-help">
+        Qualquer pessoa que sincronize a mesma biblioteca/WebDAV e instale este plugin herdará automaticamente o mapeamento de pastas. Você também pode exportar/importar em JSON.
+      </html:p>
+      <html:div class="eixos-btn-row">
+        <html:button id="eixos-btn-sync-push" type="button" class="eixos-btn">Salvar na Nota Sincronizada</html:button>
+        <html:button id="eixos-btn-sync-pull" type="button" class="eixos-btn">Recarregar da Biblioteca</html:button>
+        <html:button id="eixos-btn-export" type="button" class="eixos-btn">Exportar JSON</html:button>
+        <html:button id="eixos-btn-import" type="button" class="eixos-btn">Importar JSON</html:button>
+      </html:div>
+      <html:div id="eixos-global-status" class="eixos-status"></html:div>
+    </html:section>
+  </html:div>
+</vbox>

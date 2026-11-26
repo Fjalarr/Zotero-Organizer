@@ -1,0 +1,14 @@
+eixos-organizer-tools-menu =
+    .label = Eixos Organizer
+eixos-organizer-tools-settings =
+    .label = Configurar Pastas Gerenciadas e IA…
+eixos-organizer-tools-classify-collection =
+    .label = Classificar Itens Pendentes da Coleção Atual
+eixos-organizer-tools-sync-config =
+    .label = Recarregar Configuração Sincronizada da Biblioteca
+eixos-organizer-item-classify =
+    .label = Eixos Organizer: Classificar por Eixo e Tema…
+eixos-organizer-collection-manage =
+    .label = Eixos Organizer: Gerenciar esta coleção…
+eixos-organizer-collection-classify-pending =
+    .label = Eixos Organizer: Classificar pendentes desta coleção
