@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Eixos Organizer — Plano de Organização por Eixos</title>
+  <link rel="stylesheet" href="chrome://eixos-organizer/content/plan-dialog.css" />
+</head>
+<body>
+  <div class="plan-root">
+    <header class="plan-header">
+      <div class="plan-title" id="plan-title">Plano de Organização por Eixos</div>
+      <div class="plan-subtitle" id="plan-subtitle">
+        Revise os eixos sugeridos abaixo. Nenhuma pasta ou vínculo será criado até você clicar em "Executar Organização".
+      </div>
+
+      <div class="plan-dest-box">
+        <span class="plan-dest-label" id="plan-dest-label">Subcoleção destino:</span>
+        <span class="plan-dest-existing" id="plan-dest-existing" style="display:none"></span>
+        <input id="plan-dest-input" type="text" class="plan-dest-input" style="display:none" value="Por Eixo e Tema" />
+        <span class="plan-badge" id="plan-dest-badge">Existente</span>
+      </div>
+    </header>
+
+    <section class="plan-reason-box">
+      <div class="plan-reason-left">
+        <span class="plan-badge" id="plan-engine-badge">Modo Offline</span>
+        <span class="plan-reason-text" id="plan-reason"></span>
+      </div>
+      <div class="plan-reason-btns">
+        <button id="plan-btn-re-ai" type="button" class="plan-btn">Reanalisar com IA</button>
+        <button id="plan-btn-re-off" type="button" class="plan-btn">Reanalisar Offline</button>
+      </div>
+    </section>
+
+    <section class="plan-toolbar">
+      <input id="plan-search" type="search" placeholder="Filtrar eixos ou títulos…" />
+      <div class="plan-toolbar-btns">
+        <button id="plan-btn-select-all" type="button" class="plan-btn">Marcar todos</button>
+        <button id="plan-btn-unselect-all" type="button" class="plan-btn">Desmarcar todos</button>
+      </div>
+    </section>
+
+    <main class="plan-groups" id="plan-groups"></main>
+
+    <footer class="plan-footer">
+      <div class="plan-summary" id="plan-summary">0 eixo(s) • 0 item(ns)</div>
+      <div class="plan-footer-btns">
+        <button id="plan-btn-cancel" type="button" class="plan-btn">Cancelar</button>
+        <button id="plan-btn-execute" type="button" class="plan-btn plan-btn-primary">Executar Organização</button>
+      </div>
+    </footer>
+  </div>
+  <script src="chrome://eixos-organizer/content/plan-dialog.js"></script>
+</body>
+</html>

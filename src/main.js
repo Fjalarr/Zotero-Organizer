@@ -177,21 +177,273 @@ var EixosMain = (function () {
     if (applied.changed) {
       const createdMsg =
         applied.createdNames.length > 0
-          ? ` | Nova(s) pasta(s): ${applied.createdNames.join(", ")}`
+          ? ` (nova pasta: ${applied.createdNames.join(", ")})`
           : "";
       if (!opts.silentToast) {
         showToast(
-          "Eixos Organizer",
+          "Eixos Organizer — Item organizado",
           [
-            `“${itemMeta.title.slice(0, 70)}”`,
-            `Vinculado a: ${applied.linkedNames.join(" • ")}${createdMsg}`,
+            `“${itemMeta.title.slice(0, 72)}”`,
+            `Anexado em ${targetTree.root.name} → ${applied.linkedNames.join(" • ")}${createdMsg}`,
           ],
-          5000
+          5500
         );
       }
       return { status: "linked", applied };
     }
     return { status: "unchanged" };
+  }
+
+  function openPlanDialog(dialogArgs) {
+    const win = getActiveWindow();
+    if (!win) return null;
+
+    win.openDialog(
+      "chrome://eixos-organizer/content/plan-dialog.xhtml",
+      "eixos-organizer-plan-dialog",
+      "chrome,dialog,modal,centerscreen,resizable,width=780,height=700",
+      dialogArgs
+    );
+
+    return dialogArgs.result;
+  }
+
+  async function ensureRuleRegistered(libID, sourceCol, targetCol) {
+    const settings = EixosConfig.getSettings();
+    const existing = settings.rules.find(
+      (r) =>
+        (r.libraryID || libID) === libID &&
+        r.sourceKey === sourceCol.key &&
+        r.targetRootKey === targetCol.key
+    );
+    if (existing) return existing;
+
+    const newRule = {
+      id: `rule_${sourceCol.key}_${targetCol.key}`,
+      enabled: true,
+      libraryID: libID,
+      sourceKey: sourceCol.key,
+      targetRootKey: targetCol.key,
+      allowCreateNew: true,
+      label: `${sourceCol.name} → ${targetCol.name}`,
+    };
+    const merged = EixosConfig.normalizeRules(settings.rules.concat([newRule]));
+    EixosConfig.saveLocalSettings({ rules: merged });
+    if (settings.syncConfigInLibrary) {
+      try {
+        await EixosConfig.saveRulesToSyncNote(merged, libID);
+      } catch (e) {
+        Zotero.debug("EixosMain.ensureRuleRegistered sync note error: " + e);
+      }
+    }
+    return newRule;
+  }
+
+  /**
+   * Single-screen batch workflow:
+   * 1. Auto-detects existing thematic subcollection (nested or sibling) or prepares to create one inside source.
+   * 2. Scans all pending items in memory (skipping items already placed in the thematic tree).
+   * 3. Opens ONE Plan Review dialog showing all suggested axes & items.
+   * 4. Only on "Executar Organização" creates subcollections, links items, and registers automatic monitoring.
+   */
+  async function organizeCollectionWithPlan(collection) {
+    const win = getActiveWindow();
+    const pane = win && win.ZoteroPane;
+    const col = collection || (pane && pane.getSelectedCollection());
+    if (!col) {
+      showToast("Eixos Organizer", ["Selecione primeiro uma coleção no painel esquerdo."], 4000);
+      return;
+    }
+
+    const libID = col.libraryID || Zotero.Libraries.userLibraryID;
+    const settings = EixosConfig.getSettings();
+
+    // Prevent accidentally running organization on a destination thematic root itself
+    const isTargetRoot = settings.rules.some(
+      (r) => (r.libraryID || libID) === libID && r.targetRootKey === col.key
+    );
+    if (isTargetRoot) {
+      showToast(
+        "Eixos Organizer",
+        [
+          `“${col.name}” já é uma subcoleção temática de destino.`,
+          "Execute 'Organizar por Eixo e Tema' na pasta principal (ex.: Livros ou Minha biblioteca).",
+        ],
+        5500
+      );
+      return;
+    }
+
+    // 1. Check configured rule or auto-detect existing thematic subcollection
+    let rule = EixosConfig.findRuleForSourceCollection(col.key, libID);
+    let existingTarget = null;
+    let targetTree = null;
+
+    if (rule) {
+      const tCol = Zotero.Collections.getByLibraryAndKey(libID, rule.targetRootKey);
+      if (tCol) {
+        existingTarget = { id: tCol.id, key: tCol.key, name: tCol.name, path: tCol.name };
+        targetTree = await EixosOrganizer.getTargetTree(libID, tCol.key);
+      }
+    }
+
+    if (!targetTree) {
+      const detected = await EixosOrganizer.findExistingTargetForSource(libID, col.key);
+      if (detected) {
+        existingTarget = {
+          id: detected.id,
+          key: detected.key,
+          name: detected.name,
+          path:
+            detected.location === "nested"
+              ? `${col.name} / ${detected.name}`
+              : detected.name,
+        };
+        targetTree = await EixosOrganizer.getTargetTree(libID, detected.key);
+      }
+    }
+
+    // 2. Collect pending items (items already inside targetTree are untouched!)
+    const { pending } = await EixosOrganizer.getPendingItemsForPlanning(
+      libID,
+      col.key,
+      targetTree,
+      settings.skipAlreadyClassified
+    );
+
+    if (pending.length === 0) {
+      showToast(
+        "Eixos Organizer",
+        [
+          existingTarget
+            ? `Todos os itens de “${col.name}” já estão organizados em “${existingTarget.name}”!`
+            : `A coleção “${col.name}” não possui livros/artigos diretos para organizar.`,
+        ],
+        4500
+      );
+      return;
+    }
+
+    const itemsMeta = pending
+      .map((it) => EixosOrganizer.getItemMetadata(it))
+      .filter((m) => m && m.title);
+
+    if (itemsMeta.length === 0) {
+      showToast("Eixos Organizer", [`Nenhum item com título válido encontrado em “${col.name}”.`], 4500);
+      return;
+    }
+
+    const effectiveSettings = Object.assign({}, settings, {
+      allowCreateNew: Boolean(
+        settings.allowCreateNew && (!rule || rule.allowCreateNew !== false)
+      ),
+    });
+
+    // 3. Build complete plan in memory (ZERO writes to Zotero yet)
+    let plan;
+    try {
+      plan = await EixosClassifier.buildBatchPlan(itemsMeta, targetTree, effectiveSettings);
+    } catch (err) {
+      showToast("Eixos Organizer — Erro ao gerar plano", [String(err.message || err)], 6500);
+      return;
+    }
+
+    // 4. Open ONE review dialog for the entire collection
+    const dialogResult = openPlanDialog({
+      sourceName: col.name,
+      totalPending: itemsMeta.length,
+      existingTarget,
+      defaultNewRootName: "Por Eixo e Tema",
+      plan,
+      replan: async (forceEngine) => {
+        const latest = EixosConfig.getSettings();
+        return EixosClassifier.buildBatchPlan(itemsMeta, targetTree, latest, forceEngine);
+      },
+      result: null,
+    });
+
+    if (!dialogResult || !dialogResult.confirmed || !Array.isArray(dialogResult.groups) || dialogResult.groups.length === 0) {
+      return;
+    }
+
+    // 5. Execute approved plan (100% non-destructive)
+    try {
+      let targetRootCol;
+      if (existingTarget) {
+        targetRootCol = Zotero.Collections.getByLibraryAndKey(libID, existingTarget.key);
+      }
+      if (!targetRootCol) {
+        targetRootCol = await EixosOrganizer.ensureTargetRootInsideSource(
+          libID,
+          col.key,
+          dialogResult.newRootName || "Por Eixo e Tema"
+        );
+      }
+
+      // Register managed rule automatically so future items dropped in `col` are organized in real time
+      await ensureRuleRegistered(libID, col, targetRootCol);
+
+      // Create/resolve all approved axis subcollections first
+      const itemToColIDs = new Map();
+      const createdAxisNames = [];
+
+      for (const grp of dialogResult.groups) {
+        let axisCol = null;
+        if (!grp.isNew && grp.existingKey) {
+          axisCol = Zotero.Collections.getByLibraryAndKey(libID, grp.existingKey);
+        }
+        if (!axisCol) {
+          let parentID = targetRootCol.id;
+          if (grp.parentKey && grp.parentKey !== "__ROOT__" && grp.parentKey !== targetRootCol.key) {
+            const pCol = Zotero.Collections.getByLibraryAndKey(libID, grp.parentKey);
+            if (pCol) parentID = pCol.id;
+          }
+          axisCol = await EixosOrganizer.getOrCreateSubcollection(libID, parentID, grp.name);
+          createdAxisNames.push(axisCol.name);
+        }
+
+        for (const itemID of grp.itemIds || []) {
+          if (!itemToColIDs.has(itemID)) itemToColIDs.set(itemID, new Set());
+          itemToColIDs.get(itemID).add(axisCol.id);
+        }
+      }
+
+      // Link each item in a single saveTx() call (never removes from source!)
+      let linkedItems = 0;
+      let totalLinks = 0;
+      for (const [itemID, colIDs] of itemToColIDs.entries()) {
+        const item = await Zotero.Items.getAsync(itemID);
+        if (!item || item.deleted) continue;
+        const currentCols = new Set(item.getCollections());
+        let changed = false;
+        for (const cid of colIDs) {
+          if (!currentCols.has(cid)) {
+            item.addToCollection(cid);
+            changed = true;
+            totalLinks++;
+          }
+        }
+        if (changed) {
+          recentHandled.set(`${col.key}:${item.id}`, Date.now());
+          await item.saveTx();
+          linkedItems++;
+        }
+      }
+
+      const createdSummary =
+        createdAxisNames.length > 0 ? ` | ${createdAxisNames.length} pasta(s) criada(s)` : "";
+      showToast(
+        "Eixos Organizer — Organização concluída",
+        [
+          `“${col.name}” → “${targetRootCol.name}”`,
+          `${linkedItems} item(ns) vinculado(s) (${totalLinks} vínculos)${createdSummary}. Monitoramento automático ativado!`,
+        ],
+        7000
+      );
+    } catch (err) {
+      Zotero.debug("EixosMain.organizeCollectionWithPlan execute error: " + err);
+      showToast("Eixos Organizer — Erro ao executar plano", [String(err.message || err)], 7000);
+    }
   }
 
   function enqueueAddedItem(collectionID, itemID) {
@@ -340,106 +592,7 @@ var EixosMain = (function () {
   }
 
   async function classifyCollectionPending(collection) {
-    const win = getActiveWindow();
-    const pane = win && win.ZoteroPane;
-    const col = collection || (pane && pane.getSelectedCollection());
-    if (!col) {
-      showToast("Eixos Organizer", ["Selecione primeiro uma coleção no painel esquerdo."], 4000);
-      return;
-    }
-
-    const rule = EixosConfig.findRuleForSourceCollection(col.key, col.libraryID);
-    if (!rule) {
-      showToast(
-        "Eixos Organizer",
-        [`A coleção “${col.name}” ainda não está configurada. Abrindo configurações…`],
-        4500
-      );
-      openPreferences(col.key);
-      return;
-    }
-
-    const settings = EixosConfig.getSettings();
-    const { pending, targetTree } = await EixosOrganizer.getPendingItemsInSource(
-      col.libraryID,
-      rule.sourceKey,
-      rule.targetRootKey,
-      settings.skipAlreadyClassified
-    );
-
-    if (pending.length === 0) {
-      showToast(
-        "Eixos Organizer",
-        [`Todos os itens de “${col.name}” já estão classificados em sua árvore temática!`],
-        4500
-      );
-      return;
-    }
-
-    const allowCreateEffective = Boolean(settings.allowCreateNew && rule.allowCreateNew !== false);
-    if (
-      settings.mode === "auto" &&
-      (!targetTree.leaves || targetTree.leaves.length === 0) &&
-      !allowCreateEffective
-    ) {
-      showToast(
-        "Eixos Organizer — Aviso",
-        [
-          `A pasta destino “${targetTree.root.name}” está vazia e a criação de novas subcoleções está desativada.`,
-          "Ative 'Permitir sugerir/criar novas subcoleções' nas configurações ou crie os eixos iniciais.",
-        ],
-        7000
-      );
-      return;
-    }
-
-    let linked = 0;
-    let skipped = 0;
-    let aborted = false;
-    const createdFolders = new Set();
-    const silentToast = pending.length > 3;
-
-    if (silentToast && settings.mode === "auto") {
-      showToast(
-        "Eixos Organizer",
-        [`Classificando ${pending.length} item(ns) pendente(s) de “${col.name}”…`],
-        4000
-      );
-    }
-
-    for (let idx = 0; idx < pending.length; idx++) {
-      const item = pending[idx];
-      try {
-        const res = await processSingleItem(item, rule, {
-          force: true,
-          silentToast,
-          batchInfo: { index: idx + 1, total: pending.length },
-        });
-        if (res.status === "aborted") {
-          aborted = true;
-          break;
-        }
-        if (res.status === "linked") {
-          linked++;
-          if (res.applied && Array.isArray(res.applied.createdNames)) {
-            for (const n of res.applied.createdNames) createdFolders.add(n);
-          }
-        } else {
-          skipped++;
-        }
-      } catch (err) {
-        Zotero.debug("EixosMain.classifyCollectionPending error: " + err);
-        skipped++;
-      }
-    }
-
-    const createdPart =
-      createdFolders.size > 0 ? ` | ${createdFolders.size} nova(s) pasta(s) criada(s)` : "";
-    showToast(
-      aborted ? "Eixos Organizer — Lote interrompido" : "Eixos Organizer — Lote concluído",
-      [`Coleção “${col.name}”: ${linked} vinculado(s), ${skipped} pulado(s)/inalterado(s)${createdPart}.`],
-      6500
-    );
+    return organizeCollectionWithPlan(collection);
   }
 
   async function reloadSyncedConfigInteractive() {
@@ -566,6 +719,7 @@ var EixosMain = (function () {
       consumePendingSourceKey,
       classifySelectedItems,
       classifyCollectionPending,
+      organizeCollectionWithPlan,
       reloadSyncedConfigInteractive,
       showToast,
     };

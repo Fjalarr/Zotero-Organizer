@@ -36,6 +36,11 @@ var EixosPrefsPane = (function () {
     srcSel.textContent = "";
     tgtSel.textContent = "";
 
+    const autoOpt = document.createElementNS("http://www.w3.org/1999/xhtml", "option");
+    autoOpt.value = "__AUTO__";
+    autoOpt.textContent = 'Automático: usar existente ou criar "Por Eixo e Tema" dentro da pasta';
+    tgtSel.appendChild(autoOpt);
+
     for (const c of collectionsCache) {
       const opt1 = document.createElementNS("http://www.w3.org/1999/xhtml", "option");
       opt1.value = c.key;
@@ -51,8 +56,10 @@ var EixosPrefsPane = (function () {
     if (prevSrc && collectionsCache.some((c) => c.key === prevSrc)) {
       srcSel.value = prevSrc;
     }
-    if (prevTgt && collectionsCache.some((c) => c.key === prevTgt)) {
+    if (prevTgt && (prevTgt === "__AUTO__" || collectionsCache.some((c) => c.key === prevTgt))) {
       tgtSel.value = prevTgt;
+    } else {
+      tgtSel.value = "__AUTO__";
     }
   }
 
@@ -110,14 +117,14 @@ var EixosPrefsPane = (function () {
       const runBtn = document.createElementNS("http://www.w3.org/1999/xhtml", "button");
       runBtn.type = "button";
       runBtn.className = "eixos-btn";
-      runBtn.textContent = "Classificar Pendentes";
+      runBtn.textContent = "Organizar / Ver Plano…";
       runBtn.addEventListener("click", async () => {
         const col = Zotero.Collections.getByLibraryAndKey(
           rule.libraryID || Zotero.Libraries.userLibraryID,
           rule.sourceKey
         );
         if (col) {
-          await api().classifyCollectionPending(col);
+          await api().organizeCollectionWithPlan(col);
         }
       });
 
@@ -254,11 +261,34 @@ var EixosPrefsPane = (function () {
 
     $("eixos-btn-add-rule").addEventListener("click", async () => {
       const sourceKey = $("eixos-new-source").value;
-      const targetRootKey = $("eixos-new-target").value;
-      if (!sourceKey || !targetRootKey) {
-        setStatus("eixos-rules-status", "Selecione uma pasta de origem e uma pasta destino.", true);
+      let targetRootKey = $("eixos-new-target").value;
+      if (!sourceKey) {
+        setStatus("eixos-rules-status", "Selecione uma pasta de origem.", true);
         return;
       }
+
+      const libID = Zotero.Libraries.userLibraryID;
+      if (!targetRootKey || targetRootKey === "__AUTO__") {
+        try {
+          const detected = await api().organizer.findExistingTargetForSource(libID, sourceKey);
+          if (detected) {
+            targetRootKey = detected.key;
+          } else {
+            const created = await api().organizer.ensureTargetRootInsideSource(
+              libID,
+              sourceKey,
+              "Por Eixo e Tema"
+            );
+            targetRootKey = created.key;
+            collectionsCache = await api().organizer.listAllCollections(libID);
+            populateCollectionSelects(sourceKey);
+          }
+        } catch (err) {
+          setStatus("eixos-rules-status", "Erro ao preparar subcoleção destino: " + (err.message || err), true);
+          return;
+        }
+      }
+
       if (sourceKey === targetRootKey) {
         setStatus("eixos-rules-status", "A pasta de origem e a pasta destino devem ser diferentes.", true);
         return;
@@ -273,7 +303,7 @@ var EixosPrefsPane = (function () {
       rulesState.push({
         id: `rule_${sourceKey}_${targetRootKey}`,
         enabled: true,
-        libraryID: Zotero.Libraries.userLibraryID,
+        libraryID: libID,
         sourceKey,
         targetRootKey,
         allowCreateNew: $("eixos-new-allow-create").checked,

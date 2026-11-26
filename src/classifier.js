@@ -626,10 +626,302 @@ var EixosClassifier = (function () {
     return callOpenAICompatible(pingPrompt, settings, true);
   }
 
+  /**
+   * Builds a complete, in-memory batch organization plan (ZERO writes to Zotero)
+   * so the user can review all suggested axes and items in a single screen before executing.
+   *
+   * Returns:
+   * {
+   *   engineUsed: "offline" | "ai:...",
+   *   reason: string,
+   *   groups: [
+   *     {
+   *       id: string,
+   *       isNew: boolean,
+   *       existingKey: string | null,
+   *       parentKey: "__ROOT__" | string,
+   *       parentName: string | null,
+   *       name: string,
+   *       enabled: boolean,
+   *       items: [{ id, key, title, creators, year }]
+   *     }
+   *   ],
+   *   unassigned: [{ id, key, title, creators, year }]
+   * }
+   */
+  function buildBatchPlanOffline(itemsMeta, targetTree, settings) {
+    const safeTree = targetTree || {
+      root: { id: 0, key: "__NEW__", name: "Por Eixo e Tema" },
+      eixos: [],
+      leaves: [],
+    };
+    const effectiveSettings = Object.assign({}, settings, {
+      allowCreateNew: settings.allowCreateNew !== false,
+    });
+
+    const groupsMap = new Map();
+    const unassigned = [];
+
+    function ensureGroup(groupId, meta) {
+      if (!groupsMap.has(groupId)) {
+        groupsMap.set(groupId, Object.assign({ enabled: true, items: [], _seenIds: new Set() }, meta));
+      }
+      return groupsMap.get(groupId);
+    }
+
+    const leafByKey = new Map();
+    for (const l of safeTree.leaves || []) {
+      leafByKey.set(l.key, l);
+    }
+
+    for (const item of itemsMeta) {
+      const res = classifyOffline(item, safeTree, effectiveSettings);
+      let assignedAny = false;
+
+      for (const k of res.selectedKeys || []) {
+        const leaf = leafByKey.get(k);
+        if (!leaf) continue;
+        const g = ensureGroup(`existing:${k}`, {
+          id: `existing:${k}`,
+          isNew: false,
+          existingKey: k,
+          parentKey: leaf.parentKey || "__ROOT__",
+          parentName: leaf.parentName || null,
+          name: leaf.name,
+        });
+        if (!g._seenIds.has(item.id)) {
+          g._seenIds.add(item.id);
+          g.items.push(item);
+        }
+        assignedAny = true;
+      }
+
+      for (const ns of res.proposedNew || []) {
+        if (!ns || !ns.name) continue;
+        const normName = String(ns.name).trim();
+        const keyNorm = normName
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+        const gid = `new:${ns.parentKey || "__ROOT__"}:${keyNorm}`;
+        const g = ensureGroup(gid, {
+          id: gid,
+          isNew: true,
+          existingKey: null,
+          parentKey: ns.parentKey || "__ROOT__",
+          parentName: null,
+          name: normName,
+        });
+        if (!g._seenIds.has(item.id)) {
+          g._seenIds.add(item.id);
+          g.items.push(item);
+        }
+        assignedAny = true;
+      }
+
+      if (!assignedAny) {
+        unassigned.push(item);
+      }
+    }
+
+    const groups = Array.from(groupsMap.values())
+      .map((g) => {
+        delete g._seenIds;
+        return g;
+      })
+      .sort((a, b) => {
+        if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
+        return b.items.length - a.items.length;
+      });
+
+    const newCount = groups.filter((g) => g.isNew).length;
+    const existCount = groups.length - newCount;
+    const reason =
+      safeTree.leaves && safeTree.leaves.length > 0
+        ? `Plano gerado em Modo Offline: ${existCount} eixo(s) existente(s) reutilizado(s)${
+            newCount > 0 ? ` + ${newCount} novo(s) eixo(s) sugerido(s)` : ""
+          }.`
+        : `Plano inicial gerado em Modo Offline: ${newCount} eixo(s) temático(s) sugerido(s) para ${itemsMeta.length} item(ns).`;
+
+    return {
+      engineUsed: "offline",
+      reason,
+      groups,
+      unassigned,
+    };
+  }
+
+  async function buildBatchPlanWithAI(itemsMeta, targetTree, settings) {
+    const safeTree = targetTree || {
+      root: { id: 0, key: "__NEW__", name: "Por Eixo e Tema" },
+      eixos: [],
+      leaves: [],
+    };
+    const existingLeaves = (safeTree.leaves || []).map((l) => ({
+      key: l.key,
+      name: l.name,
+      parentName: l.parentName || null,
+    }));
+
+    const maxTargets = settings.maxTargets || 3;
+    const allowNew = settings.allowCreateNew !== false;
+    const compactItems = itemsMeta.map((it) => ({
+      id: it.id,
+      title: it.title,
+      creators: (it.creators || []).slice(0, 2),
+      year: it.year,
+      tags: (it.tags || []).slice(0, 5),
+    }));
+
+    // Process in chunks of up to 80 items so prompts stay fast and accurate
+    const chunkSize = 80;
+    const groupsMap = new Map();
+    const itemById = new Map(itemsMeta.map((it) => [it.id, it]));
+    const leafByKey = new Map((safeTree.leaves || []).map((l) => [l.key, l]));
+    const assignedIds = new Set();
+
+    function addToGroup(gid, meta, item) {
+      if (!groupsMap.has(gid)) {
+        groupsMap.set(gid, Object.assign({ enabled: true, items: [], _seen: new Set() }, meta));
+      }
+      const g = groupsMap.get(gid);
+      if (!g._seen.has(item.id)) {
+        g._seen.add(item.id);
+        g.items.push(item);
+      }
+      assignedIds.add(item.id);
+    }
+
+    for (let offset = 0; offset < compactItems.length; offset += chunkSize) {
+      const chunk = compactItems.slice(offset, offset + chunkSize);
+      const proposedAxesSoFar = Array.from(groupsMap.values())
+        .filter((g) => g.isNew)
+        .map((g) => g.name);
+
+      const prompt =
+        `Você é um bibliotecário e historiador especialista organizando uma coleção acadêmica no Zotero.\n` +
+        `Analise TODOS os ${chunk.length} itens abaixo e distribua-os por Eixos Temáticos coerentes (cada item pode ficar em 1 até ${maxTargets} eixos se for interdisciplinar).\n\n` +
+        `REGRAS:\n` +
+        `1. ${
+          existingLeaves.length > 0
+            ? `Priorize usar as pastas EXISTENTES listadas abaixo (informando o "existing_key").`
+            : `A pasta destino ainda está vazia — proponha entre 4 e 10 eixos temáticos bem estruturados em português.`
+        }\n` +
+        `2. ${
+          allowNew
+            ? `Você pode propor novos eixos quando necessário (use "existing_key": null e dê um "name" claro em português). Reutilize nomes já propostos quando fizer sentido.`
+            : `NÃO proponha novos eixos; use apenas os "existing_key" listados.`
+        }\n` +
+        `3. Responda EXCLUSIVAMENTE com JSON válido neste formato:\n` +
+        `{\n` +
+        `  "axes": [\n` +
+        `    {"existing_key": "KEY_OU_NULL", "name": "Nome do Eixo", "item_ids": [1, 2, 3]}\n` +
+        `  ],\n` +
+        `  "summary": "Resumo curto em português."\n` +
+        `}\n\n` +
+        `PASTAS EXISTENTES:\n${JSON.stringify(existingLeaves)}\n\n` +
+        (proposedAxesSoFar.length > 0
+          ? `EIXOS NOVOS JÁ PROPOSTOS NO LOTE:\n${JSON.stringify(proposedAxesSoFar)}\n\n`
+          : "") +
+        `ITENS A ORGANIZAR:\n${JSON.stringify(chunk)}`;
+
+      let parsed;
+      if (settings.aiProvider === "gemini") {
+        parsed = await callGemini(prompt, settings);
+      } else if (settings.aiProvider === "openai") {
+        parsed = await callOpenAICompatible(prompt, settings, false);
+      } else {
+        parsed = await callOpenAICompatible(prompt, settings, true);
+      }
+
+      for (const ax of Array.isArray(parsed.axes) ? parsed.axes : []) {
+        if (!ax || !Array.isArray(ax.item_ids)) continue;
+        const validLeaf = ax.existing_key && leafByKey.get(ax.existing_key);
+        for (const rawId of ax.item_ids) {
+          const item = itemById.get(Number(rawId));
+          if (!item) continue;
+          if (validLeaf) {
+            addToGroup(
+              `existing:${validLeaf.key}`,
+              {
+                id: `existing:${validLeaf.key}`,
+                isNew: false,
+                existingKey: validLeaf.key,
+                parentKey: validLeaf.parentKey || "__ROOT__",
+                parentName: validLeaf.parentName || null,
+                name: validLeaf.name,
+              },
+              item
+            );
+          } else if (allowNew && ax.name && String(ax.name).trim()) {
+            const cleanName = String(ax.name).trim();
+            const norm = cleanName
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .toLowerCase();
+            addToGroup(
+              `new:__ROOT__:${norm}`,
+              {
+                id: `new:__ROOT__:${norm}`,
+                isNew: true,
+                existingKey: null,
+                parentKey: "__ROOT__",
+                parentName: null,
+                name: cleanName,
+              },
+              item
+            );
+          }
+        }
+      }
+    }
+
+    const unassigned = itemsMeta.filter((it) => !assignedIds.has(it.id));
+    const groups = Array.from(groupsMap.values())
+      .map((g) => {
+        delete g._seen;
+        return g;
+      })
+      .sort((a, b) => b.items.length - a.items.length);
+
+    return {
+      engineUsed: `ai:${settings.aiProvider}`,
+      reason: `Plano completo gerado via IA (${settings.aiProvider}): ${groups.length} eixo(s) para ${itemsMeta.length} item(ns).`,
+      groups,
+      unassigned,
+    };
+  }
+
+  async function buildBatchPlan(itemsMeta, targetTree, settings, forceEngine) {
+    const engine = forceEngine || settings.engine || "hybrid";
+    if (engine === "offline") {
+      return buildBatchPlanOffline(itemsMeta, targetTree, settings);
+    }
+    if (engine === "ai" || (engine === "hybrid" && hasAIConfigured(settings))) {
+      try {
+        return await buildBatchPlanWithAI(itemsMeta, targetTree, settings);
+      } catch (err) {
+        Zotero.debug("EixosClassifier.buildBatchPlan AI error: " + err);
+        if (engine === "ai") throw err;
+        const fallback = buildBatchPlanOffline(itemsMeta, targetTree, settings);
+        fallback.reason = `Fallback offline (IA indisponível: ${err.message || err}). ${fallback.reason}`;
+        return fallback;
+      }
+    }
+    const offline = buildBatchPlanOffline(itemsMeta, targetTree, settings);
+    if (engine === "hybrid" && !hasAIConfigured(settings)) {
+      offline.reason = `Modo offline ativo (configure uma chave de IA se quiser classificação semântica avançada). ${offline.reason}`;
+    }
+    return offline;
+  }
+
   return {
     classifyOffline,
     classifyWithAI,
     classifyItem,
+    buildBatchPlanOffline,
+    buildBatchPlanWithAI,
+    buildBatchPlan,
     testAIConnection,
     hasAIConfigured,
   };

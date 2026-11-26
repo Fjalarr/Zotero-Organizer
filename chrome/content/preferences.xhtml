@@ -24,17 +24,17 @@
 
       <html:div class="eixos-add-rule">
         <html:div class="eixos-field">
-          <html:label for="eixos-new-source">Quando eu adicionar um item em:</html:label>
+          <html:label for="eixos-new-source">Pasta a gerenciar:</html:label>
           <html:select id="eixos-new-source"></html:select>
         </html:div>
         <html:div class="eixos-field">
-          <html:label for="eixos-new-target">Classificar na subcoleção temática:</html:label>
+          <html:label for="eixos-new-target">Subcoleção temática de destino:</html:label>
           <html:select id="eixos-new-target"></html:select>
         </html:div>
         <html:div class="eixos-field eixos-field-inline">
           <html:label class="eixos-check">
             <html:input id="eixos-new-allow-create" type="checkbox" checked="checked" />
-            Permitir criar novo tema/subcoleção nesta regra
+            Permitir criar novos eixos/temas nesta regra
           </html:label>
           <html:button id="eixos-btn-add-rule" type="button" class="eixos-btn eixos-btn-primary">+ Adicionar Pasta Gerenciada</html:button>
         </html:div>
@@ -47,10 +47,10 @@
       <html:h3>2. Comportamento ao Adicionar Novo Item</html:h3>
       <html:div class="eixos-grid-2">
         <html:div class="eixos-field">
-          <html:label for="eixos-mode">Modo de operação:</html:label>
+          <html:label for="eixos-mode">Ao adicionar 1 item novo em pasta gerenciada:</html:label>
           <html:select id="eixos-mode">
-            <html:option value="interactive">Interativo (abre janela para confirmar/editar em 1 clique)</html:option>
-            <html:option value="auto">Automático em segundo plano (vincula direto com notificação)</html:option>
+            <html:option value="auto">Automático com notificação (recomendado — anexa no eixo e avisa onde foi)</html:option>
+            <html:option value="interactive">Interativo (abre janela para confirmar antes de vincular)</html:option>
           </html:select>
         </html:div>
         <html:div class="eixos-field">
@@ -58,6 +58,9 @@
           <html:input id="eixos-max-targets" type="number" min="1" max="8" value="3" />
         </html:div>
       </html:div>
+      <html:p class="eixos-help">
+        Ao organizar uma coleção inteira (botão direito → Organizar por Eixo e Tema), o plugin sempre mostra primeiro o plano completo em uma única tela para você revisar e executar de uma vez.
+      </html:p>
       <html:div class="eixos-checks">
         <html:label class="eixos-check">
           <html:input id="eixos-allow-create" type="checkbox" />
@@ -65,7 +68,7 @@
         </html:label>
         <html:label class="eixos-check">
           <html:input id="eixos-skip-classified" type="checkbox" />
-          Ignorar itens que já estejam vinculados a algum eixo/tema da árvore destino (evita repetir após sync)
+          Não mexer em itens que eu já coloquei diretamente em algum eixo/tema da subcoleção
         </html:label>
       </html:div>
     </html:section>

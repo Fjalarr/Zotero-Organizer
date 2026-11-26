@@ -227,13 +227,125 @@ var EixosOrganizer = (function () {
   }
 
   function isItemAlreadyInTargetTree(item, targetTree) {
+    if (!item || !targetTree || !targetTree.allCollectionIDs) return false;
     const cols = item.getCollections ? item.getCollections() : [];
     for (const cid of cols) {
-      if (cid !== targetTree.root.id && targetTree.allCollectionIDs.has(cid)) {
+      if (targetTree.allCollectionIDs.has(cid)) {
         return true;
       }
     }
     return false;
+  }
+
+  /**
+   * Finds an existing thematic subcollection for sourceCol:
+   * 1. Nested child named "Por Eixo e Tema" or "<SourceName> - Por Eixo e Tema"
+   * 2. Sibling under the same parent named "<SourceName> - Por Eixo e Tema"
+   * Returns { id, key, name, location: "nested"|"sibling" } or null if none exists yet.
+   */
+  async function findExistingTargetForSource(libraryID, sourceKey) {
+    const libID = libraryID || Zotero.Libraries.userLibraryID;
+    const sourceCol = Zotero.Collections.getByLibraryAndKey(libID, sourceKey);
+    if (!sourceCol) return null;
+
+    const rows = await Zotero.DB.queryAsync(
+      `SELECT collectionID, collectionName, parentCollectionID, key
+       FROM collections
+       WHERE libraryID = ?
+         AND collectionID NOT IN (SELECT collectionID FROM deletedCollections)`,
+      [libID]
+    );
+    if (!rows || rows.length === 0) return null;
+
+    const norm = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
+
+    const srcNorm = norm(sourceCol.name);
+    const isThematicChildName = (name) => {
+      const n = norm(name);
+      return (
+        n === "por eixo e tema" ||
+        n === "por eixos e temas" ||
+        n === "eixos e temas" ||
+        n === `${srcNorm} - por eixo e tema` ||
+        n.endsWith(" - por eixo e tema")
+      );
+    };
+
+    // 1. Check nested child inside sourceCol
+    const nested = rows.find(
+      (r) => r.parentCollectionID === sourceCol.id && isThematicChildName(r.collectionName)
+    );
+    if (nested) {
+      return {
+        id: nested.collectionID,
+        key: nested.key,
+        name: nested.collectionName,
+        location: "nested",
+      };
+    }
+
+    // 2. Check sibling under same parent (e.g. Daniel/Livros -> Daniel/Livros - Por Eixo e Tema)
+    const srcParent = sourceCol.parentID || null;
+    const sibling = rows.find(
+      (r) =>
+        (r.parentCollectionID || null) === srcParent &&
+        r.key !== sourceCol.key &&
+        norm(r.collectionName) === `${srcNorm} - por eixo e tema`
+    );
+    if (sibling) {
+      return {
+        id: sibling.collectionID,
+        key: sibling.key,
+        name: sibling.collectionName,
+        location: "sibling",
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Ensures a thematic root subcollection exists inside sourceCol (or reuses existing).
+   */
+  async function ensureTargetRootInsideSource(libraryID, sourceKey, customName) {
+    const libID = libraryID || Zotero.Libraries.userLibraryID;
+    const sourceCol = Zotero.Collections.getByLibraryAndKey(libID, sourceKey);
+    if (!sourceCol) {
+      throw new Error(`Coleção de origem não encontrada (key=${sourceKey}).`);
+    }
+    const name = String(customName || "Por Eixo e Tema").trim() || "Por Eixo e Tema";
+    return getOrCreateSubcollection(libID, sourceCol.id, name);
+  }
+
+  /**
+   * Lists direct pending items in sourceCol (optionally skipping items already in targetTree).
+   * Works even when targetTree is null (destination subcollection not created yet).
+   */
+  async function getPendingItemsForPlanning(libraryID, sourceKey, targetTree, skipAlreadyClassified) {
+    const libID = libraryID || Zotero.Libraries.userLibraryID;
+    const sourceCol = Zotero.Collections.getByLibraryAndKey(libID, sourceKey);
+    if (!sourceCol) {
+      throw new Error(`Coleção de origem não encontrada (key=${sourceKey}).`);
+    }
+    const childItemIDs = sourceCol.getChildItems(true);
+    const pending = [];
+
+    for (const id of childItemIDs) {
+      const item = await Zotero.Items.getAsync(id);
+      if (!item || item.deleted) continue;
+      if (item.isNote && item.isNote()) continue;
+      if (item.isAttachment && item.isAttachment() && item.parentItemID) continue;
+      if (skipAlreadyClassified && targetTree && isItemAlreadyInTargetTree(item, targetTree)) {
+        continue;
+      }
+      pending.push(item);
+    }
+    return { sourceCol, pending };
   }
 
   async function getOrCreateSubcollection(libraryID, parentID, name) {
@@ -348,8 +460,11 @@ var EixosOrganizer = (function () {
     getTargetTree,
     getItemMetadata,
     isItemAlreadyInTargetTree,
+    findExistingTargetForSource,
+    ensureTargetRootInsideSource,
     getOrCreateSubcollection,
     applyClassification,
     getPendingItemsInSource,
+    getPendingItemsForPlanning,
   };
 })();

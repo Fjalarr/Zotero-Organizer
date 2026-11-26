@@ -7,7 +7,7 @@ var EixosConfig = (function () {
   const CONFIG_SCHEMA_VERSION = 1;
 
   const DEFAULTS = {
-    mode: "interactive", // "interactive" | "auto"
+    mode: "auto", // "auto" (automático com notificação) | "interactive" (perguntar antes)
     engine: "hybrid", // "hybrid" | "ai" | "offline"
     aiProvider: "gemini", // "gemini" | "openai" | "custom"
     aiApiKey: "",
@@ -45,7 +45,7 @@ var EixosConfig = (function () {
       rules = [];
     }
     return {
-      mode: getPref("mode") || "interactive",
+      mode: getPref("mode") || "auto",
       engine: getPref("engine") || "hybrid",
       aiProvider: getPref("aiProvider") || "gemini",
       aiApiKey: String(getPref("aiApiKey") || "").trim(),
@@ -208,7 +208,9 @@ var EixosConfig = (function () {
   }
 
   /**
-   * Auto-discovers pairs like "<Name>" and "<Name> - Por Eixo e Tema" under the same parent.
+   * Auto-discovers pairs:
+   * 1. Sibling: "<Name>" and "<Name> - Por Eixo e Tema" under the same parent.
+   * 2. Nested: "<Name>" containing child "Por Eixo e Tema" or "<Name> - Por Eixo e Tema".
    */
   async function autoDiscoverRules(libraryID) {
     const libID = libraryID || Zotero.Libraries.userLibraryID;
@@ -221,21 +223,32 @@ var EixosConfig = (function () {
     );
     if (!rows || rows.length === 0) return [];
 
+    const byID = new Map();
     const byParent = new Map();
     for (const r of rows) {
+      byID.set(r.collectionID, r);
       const pid = r.parentCollectionID || 0;
       if (!byParent.has(pid)) byParent.set(pid, []);
       byParent.get(pid).push(r);
     }
 
+    const norm = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
+
     const discovered = [];
+
+    // 1. Sibling pattern: "<Name>" -> "<Name> - Por Eixo e Tema"
     for (const siblings of byParent.values()) {
       for (const target of siblings) {
         const match = target.collectionName.match(/^(.+?)\s*-\s*Por Eixo e Tema$/i);
         if (!match) continue;
-        const baseName = match[1].trim().toLowerCase();
+        const baseName = norm(match[1]);
         const source = siblings.find(
-          (s) => s.key !== target.key && s.collectionName.trim().toLowerCase() === baseName
+          (s) => s.key !== target.key && norm(s.collectionName) === baseName
         );
         if (source) {
           discovered.push({
@@ -250,6 +263,30 @@ var EixosConfig = (function () {
         }
       }
     }
+
+    // 2. Nested child pattern: "<Source>" -> "<Source> / Por Eixo e Tema" (or "<Source> - Por Eixo e Tema")
+    for (const r of rows) {
+      if (!r.parentCollectionID || !byID.has(r.parentCollectionID)) continue;
+      const parent = byID.get(r.parentCollectionID);
+      const rn = norm(r.collectionName);
+      const pn = norm(parent.collectionName);
+      if (
+        rn === "por eixo e tema" ||
+        rn === "por eixos e temas" ||
+        rn === `${pn} - por eixo e tema`
+      ) {
+        discovered.push({
+          id: `rule_${parent.key}_${r.key}`,
+          enabled: true,
+          libraryID: libID,
+          sourceKey: parent.key,
+          targetRootKey: r.key,
+          allowCreateNew: true,
+          label: `${parent.collectionName} → ${parent.collectionName} / ${r.collectionName}`,
+        });
+      }
+    }
+
     return normalizeRules(discovered);
   }
 
