@@ -34,6 +34,7 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
   }
 
   Services.scriptloader.loadSubScript(rootURI + "src/i18n.js", globalThis);
+  Services.scriptloader.loadSubScript(rootURI + "src/crypto.js", globalThis);
   Services.scriptloader.loadSubScript(rootURI + "src/config.js", globalThis);
   Services.scriptloader.loadSubScript(rootURI + "src/organizer.js", globalThis);
   Services.scriptloader.loadSubScript(rootURI + "src/classifier.js", globalThis);

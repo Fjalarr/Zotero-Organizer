@@ -637,6 +637,18 @@ var EixosClassifier = (function () {
     return Promise.resolve();
   }
 
+  function sanitizeErr(err) {
+    const raw = (err && err.message) || String(err || "");
+    if (typeof EixosCrypto !== "undefined" && typeof EixosCrypto.sanitizeErrorText === "function") {
+      return EixosCrypto.sanitizeErrorText(raw);
+    }
+    return raw
+      .replace(/([?&]key=)[^&\s"']+/gi, "$1***")
+      .replace(/(Bearer\s+)[A-Za-z0-9._\-]+/gi, "$1***")
+      .replace(/\bAIza[0-9A-Za-z\-_]{16,}\b/g, "AIza***")
+      .replace(/\bsk-[A-Za-z0-9\-_]{16,}\b/g, "sk-***");
+  }
+
   async function requestWithRetry(method, url, options, maxAttempts) {
     const attempts = Math.max(1, maxAttempts || 2);
     let lastErr = null;
@@ -648,21 +660,30 @@ var EixosClassifier = (function () {
         const status = err && (err.status || (err.xmlhttp && err.xmlhttp.status));
         const isTransient = !status || status === 429 || status >= 500;
         if (!isTransient || i === attempts - 1) {
-          throw err;
+          const safe = new Error(sanitizeErr(err));
+          safe.status = status;
+          throw safe;
         }
         await sleepMs(900 * (i + 1));
       }
     }
-    throw lastErr;
+    const safe = new Error(sanitizeErr(lastErr));
+    throw safe;
   }
 
   async function callGemini(prompt, settings, timeoutMs) {
     const apiKey = settings.aiApiKey;
-    if (!apiKey) throw new Error("Chave de API do Gemini não configurada.");
+    if (!apiKey) throw new Error("Gemini API key is not configured.");
     const model = settings.aiModel || "gemini-3.5-flash";
+    // Send API key via official HTTP header instead of URL query string so it never appears in logs
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
       model
-    )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    )}:generateContent`;
+
+    const headers = {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    };
 
     const makeBody = (includeThinking) => {
       const genConfig = {
@@ -686,7 +707,7 @@ var EixosClassifier = (function () {
         "POST",
         url,
         {
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: makeBody(hasTc),
           timeout: timeoutMs || 35000,
         },
@@ -700,7 +721,7 @@ var EixosClassifier = (function () {
           "POST",
           url,
           {
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: makeBody(false),
             timeout: timeoutMs || 35000,
           },

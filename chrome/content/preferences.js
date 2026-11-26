@@ -202,6 +202,19 @@ var EixosPrefsPane = (function () {
     }
   }
 
+  function updateKeyEncryptionStatus() {
+    const el = $("eixos-key-enc-status");
+    if (!el || !api()) return;
+    const method = api().config.getApiKeyStorageMethod();
+    if (method === "nss-sdr") {
+      el.textContent = t("prefKeyStatusNss");
+    } else if (method === "aes-gcm") {
+      el.textContent = t("prefKeyStatusAes");
+    } else {
+      el.textContent = t("prefKeyStatusEmpty");
+    }
+  }
+
   function saveFormFields() {
     const partial = {
       language: $("eixos-language") ? $("eixos-language").value : "auto",
@@ -211,7 +224,6 @@ var EixosPrefsPane = (function () {
       skipAlreadyClassified: $("eixos-skip-classified").checked,
       engine: $("eixos-engine").value,
       aiProvider: $("eixos-provider").value,
-      aiApiKey: $("eixos-apikey").value.trim(),
       aiModel: $("eixos-model").value.trim(),
       aiEndpoint: $("eixos-endpoint").value.trim(),
       syncConfigInLibrary: $("eixos-sync-library").checked,
@@ -219,8 +231,26 @@ var EixosPrefsPane = (function () {
     api().config.saveLocalSettings(partial);
   }
 
-  function loadFormFields() {
-    const s = api().config.getSettings();
+  async function saveApiKeyField() {
+    try {
+      const raw = $("eixos-apikey").value.trim();
+      const res = await api().config.saveApiKey(raw);
+      updateKeyEncryptionStatus();
+      if (res.method === "none") {
+        setStatus("eixos-ai-status", t("statusKeyCleared"));
+      } else {
+        const label = res.method === "nss-sdr" ? "NSS key4.db" : "AES-256-GCM";
+        setStatus("eixos-ai-status", t("statusKeySavedEnc", { method: label }));
+      }
+      return true;
+    } catch (err) {
+      setStatus("eixos-ai-status", t("statusKeyEncryptErr", { err: err.message || err }), true);
+      return false;
+    }
+  }
+
+  async function loadFormFields() {
+    const s = await api().config.getSettingsAsync();
     rulesState = s.rules.slice();
     if ($("eixos-language")) {
       $("eixos-language").value = s.language || "auto";
@@ -236,6 +266,7 @@ var EixosPrefsPane = (function () {
     $("eixos-endpoint").value = s.aiEndpoint;
     $("eixos-sync-library").checked = s.syncConfigInLibrary;
     updateEndpointVisibility();
+    updateKeyEncryptionStatus();
   }
 
   function bindEvents() {
@@ -249,6 +280,7 @@ var EixosPrefsPane = (function () {
         applyLanguage();
         populateCollectionSelects();
         renderRules();
+        updateKeyEncryptionStatus();
         setStatus("eixos-global-status", t("statusSaved"));
       });
     }
@@ -259,7 +291,6 @@ var EixosPrefsPane = (function () {
       "eixos-allow-create",
       "eixos-skip-classified",
       "eixos-engine",
-      "eixos-apikey",
       "eixos-model",
       "eixos-endpoint",
       "eixos-sync-library",
@@ -272,6 +303,20 @@ var EixosPrefsPane = (function () {
           setStatus("eixos-global-status", t("statusSaved"));
         });
       }
+    }
+
+    $("eixos-apikey").addEventListener("change", async () => {
+      await saveApiKeyField();
+    });
+
+    const clearKeyBtn = $("eixos-btn-clear-key");
+    if (clearKeyBtn) {
+      clearKeyBtn.addEventListener("click", async () => {
+        $("eixos-apikey").value = "";
+        await api().config.clearApiKey();
+        updateKeyEncryptionStatus();
+        setStatus("eixos-ai-status", t("statusKeyCleared"));
+      });
     }
 
     $("eixos-provider").addEventListener("change", () => {
@@ -359,7 +404,9 @@ var EixosPrefsPane = (function () {
 
     $("eixos-btn-test-ai").addEventListener("click", async () => {
       saveFormFields();
-      const s = api().config.getSettings();
+      const ok = await saveApiKeyField();
+      if (!ok) return;
+      const s = await api().config.getSettingsAsync();
       setStatus("eixos-ai-status", t("statusTestingAI"));
       try {
         await api().classifier.testAIConnection(s);
@@ -434,10 +481,11 @@ var EixosPrefsPane = (function () {
         if (rv === fp.returnOK) {
           const text = await Zotero.File.getContentsAsync(fp.file);
           await api().config.importConfigJSON(text);
-          loadFormFields();
+          await loadFormFields();
           applyLanguage();
           populateCollectionSelects();
           renderRules();
+          updateKeyEncryptionStatus();
           setStatus(
             "eixos-global-status",
             t("statusImportOk", { count: rulesState.length })
@@ -461,8 +509,9 @@ var EixosPrefsPane = (function () {
     try {
       bindEvents();
       collectionsCache = await api().organizer.listAllCollections();
-      loadFormFields();
+      await loadFormFields();
       applyLanguage();
+      updateKeyEncryptionStatus();
       const pendingSource = api().consumePendingSourceKey();
       populateCollectionSelects(pendingSource);
       renderRules();
